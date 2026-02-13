@@ -103,7 +103,46 @@ class _HomeScreenState extends State<HomeScreen> {
                           itemCount: 5, // Dummy count to test the UI
                           itemBuilder: (context, index) {
                             // We will build our ListTile here!
-                            return const SizedBox();
+                            return ListTile(
+                              contentPadding: const EdgeInsets.symmetric(
+                                vertical: 8.0,
+                              ),
+
+                              // 1. The Leading Play Button
+                              leading: Container(
+                                height: 48,
+                                width: 48,
+                                decoration: BoxDecoration(
+                                  color: Colors.white70,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Icon(Icons.play_arrow),
+                              ),
+
+                              // 2. The Title & Subtitle
+                              title: const Text(
+                                "Audio name",
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              subtitle: const Text(
+                                "happy",
+                                style: TextStyle(color: Colors.white54),
+                              ),
+
+                              // 3. The Trailing Share/Forward Button
+                              trailing: Container(
+                                width: 48,
+                                height: 48,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(12),
+                                  color: Colors.white70,
+                                ),
+                                child: Icon(Icons.share),
+                              ),
+                            );
                           },
                         ),
                       ),
