@@ -42,7 +42,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       floatingActionButton: FloatingActionButton(
         onPressed: () {},
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.yellow[300],
         child: Icon(Icons.add, color: Colors.black),
       ),
 
