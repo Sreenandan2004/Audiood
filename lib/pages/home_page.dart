@@ -217,6 +217,12 @@ class _HomeScreenState extends State<HomeScreen> {
                             duration: const Duration(milliseconds: 300),
                             curve: Curves.easeInOut,
                           );
+                        } else {
+                          _pageController.animateToPage(
+                            profiles.length - 1,
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeInOut,
+                          );
                         }
                       },
                       child: const Icon(
@@ -268,13 +274,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     // --- RIGHT ARROW ---
                     GestureDetector(
                       onTap: () {
-                        if (currentPage < profiles.length - 1) {
-                          _pageController.animateToPage(
-                            currentPage + 1,
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeInOut,
-                          );
-                        }
+                        _pageController.animateToPage(
+                          (currentPage + 1) % profiles.length,
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeInOut,
+                        );
                       },
                       child: const Icon(
                         Icons.chevron_right,
