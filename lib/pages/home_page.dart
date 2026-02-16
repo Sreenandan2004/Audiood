@@ -49,64 +49,6 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          Positioned(
-            bottom: 40,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: Container(
-                height: 40,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2), // Glassmorphism effect
-                  borderRadius: BorderRadius.circular(20), // Pill shape
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min, // Hugs the contents tightly
-                  children: [
-                    const Icon(
-                      Icons.chevron_left,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-
-                    // Generate the dots and the active avatar
-                    ...List.generate(profiles.length, (index) {
-                      if (index == currentPage) {
-                        // Active Page: Show the tiny profile image
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                          child: CircleAvatar(
-                            radius: 12,
-                            backgroundImage: AssetImage(
-                              profiles[index].imagePath,
-                            ),
-                          ),
-                        );
-                      }
-                      // Inactive Page: Show a small dot
-                      return Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 4.0),
-                        width: 8,
-                        height: 8,
-                        decoration: const BoxDecoration(
-                          color: Colors.white54,
-                          shape: BoxShape.circle,
-                        ),
-                      );
-                    }),
-
-                    const Icon(
-                      Icons.chevron_right,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-
           PageView.builder(
             controller: _pageController,
             onPageChanged: (index) {
@@ -192,7 +134,10 @@ class _HomeScreenState extends State<HomeScreen> {
                           // The Audio List
                           Expanded(
                             child: ListView.builder(
-                              padding: const EdgeInsets.only(top: 20),
+                              padding: const EdgeInsets.only(
+                                top: 20,
+                                bottom: 80,
+                              ),
                               itemCount: 5, // Dummy count to test the UI
                               itemBuilder: (context, index) {
                                 // We will build our ListTile here!
@@ -246,6 +191,63 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               );
             },
+          ),
+          Positioned(
+            bottom: 40,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Container(
+                height: 40,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2), // Glassmorphism effect
+                  borderRadius: BorderRadius.circular(20), // Pill shape
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min, // Hugs the contents tightly
+                  children: [
+                    const Icon(
+                      Icons.chevron_left,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+
+                    // Generate the dots and the active avatar
+                    ...List.generate(profiles.length, (index) {
+                      if (index == currentPage) {
+                        // Active Page: Show the tiny profile image
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                          child: CircleAvatar(
+                            radius: 12,
+                            backgroundImage: AssetImage(
+                              profiles[index].imagePath,
+                            ),
+                          ),
+                        );
+                      }
+                      // Inactive Page: Show a small dot
+                      return Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 4.0),
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: Colors.white54,
+                          shape: BoxShape.circle,
+                        ),
+                      );
+                    }),
+
+                    const Icon(
+                      Icons.chevron_right,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
         ],
       ),
