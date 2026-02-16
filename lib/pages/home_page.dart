@@ -192,6 +192,7 @@ class _HomeScreenState extends State<HomeScreen> {
               );
             },
           ),
+          // 2. Fixed Bottom Slider (Now Interactive!)
           Positioned(
             bottom: 40,
             left: 0,
@@ -201,48 +202,85 @@ class _HomeScreenState extends State<HomeScreen> {
                 height: 40,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2), // Glassmorphism effect
-                  borderRadius: BorderRadius.circular(20), // Pill shape
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(20),
                 ),
                 child: Row(
-                  mainAxisSize: MainAxisSize.min, // Hugs the contents tightly
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(
-                      Icons.chevron_left,
-                      color: Colors.white,
-                      size: 20,
+                    // --- LEFT ARROW ---
+                    GestureDetector(
+                      onTap: () {
+                        if (currentPage > 0) {
+                          _pageController.animateToPage(
+                            currentPage - 1,
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeInOut,
+                          );
+                        }
+                      },
+                      child: const Icon(
+                        Icons.chevron_left,
+                        color: Colors.white,
+                        size: 24,
+                      ),
                     ),
 
-                    // Generate the dots and the active avatar
+                    // --- DOTS & AVATARS ---
                     ...List.generate(profiles.length, (index) {
-                      if (index == currentPage) {
-                        // Active Page: Show the tiny profile image
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                          child: CircleAvatar(
-                            radius: 12,
-                            backgroundImage: AssetImage(
-                              profiles[index].imagePath,
-                            ),
-                          ),
-                        );
-                      }
-                      // Inactive Page: Show a small dot
-                      return Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 4.0),
-                        width: 8,
-                        height: 8,
-                        decoration: const BoxDecoration(
-                          color: Colors.white54,
-                          shape: BoxShape.circle,
-                        ),
+                      return GestureDetector(
+                        onTap: () {
+                          // Jump to this specific profile when tapped
+                          _pageController.animateToPage(
+                            index,
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeInOut,
+                          );
+                        },
+                        child: index == currentPage
+                            // Active Page: Avatar
+                            ? Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 4.0,
+                                ),
+                                child: CircleAvatar(
+                                  radius: 12,
+                                  backgroundImage: AssetImage(
+                                    profiles[index].imagePath,
+                                  ),
+                                ),
+                              )
+                            // Inactive Page: Dot
+                            : Container(
+                                margin: const EdgeInsets.symmetric(
+                                  horizontal: 4.0,
+                                ),
+                                width: 8,
+                                height: 8,
+                                decoration: const BoxDecoration(
+                                  color: Colors.white54,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
                       );
                     }),
 
-                    const Icon(
-                      Icons.chevron_right,
-                      color: Colors.white,
-                      size: 20,
+                    // --- RIGHT ARROW ---
+                    GestureDetector(
+                      onTap: () {
+                        if (currentPage < profiles.length - 1) {
+                          _pageController.animateToPage(
+                            currentPage + 1,
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeInOut,
+                          );
+                        }
+                      },
+                      child: const Icon(
+                        Icons.chevron_right,
+                        color: Colors.white,
+                        size: 24,
+                      ),
                     ),
                   ],
                 ),
