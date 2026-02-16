@@ -14,9 +14,21 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Your updated data
   final List<FriendProfile> profiles = [
-    FriendProfile(name: "ZONAL", imagePath: "assets/Zonal.jpg", voiceNotes: []),
-    FriendProfile(name: "ABHAI", imagePath: "assets/Abhai.jpg", voiceNotes: []),
-    FriendProfile(name: "SURA", voiceNotes: [], imagePath: "assets/Sura.jpg"),
+    FriendProfile(
+      name: "ZONAL",
+      imagePath: "assets/images/Zonal.jpg",
+      voiceNotes: [],
+    ),
+    FriendProfile(
+      name: "ABHAI",
+      imagePath: "assets/images/Abhai.jpg",
+      voiceNotes: [],
+    ),
+    FriendProfile(
+      name: "SURA",
+      voiceNotes: [],
+      imagePath: "assets/images/Sura.jpg",
+    ),
   ];
 
   @override
@@ -31,7 +43,7 @@ class _HomeScreenState extends State<HomeScreen> {
       floatingActionButton: FloatingActionButton(
         onPressed: () {},
         backgroundColor: Colors.white,
-        child: Icon(Icons.play_arrow_outlined, color: Colors.black),
+        child: Icon(Icons.add, color: Colors.black),
       ),
 
       backgroundColor: Colors.black,
@@ -60,7 +72,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                     // Generate the dots and the active avatar
                     ...List.generate(profiles.length, (index) {
-                      if (index == _currentPage) {
+                      if (index == currentPage) {
                         // Active Page: Show the tiny profile image
                         return Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 4.0),
