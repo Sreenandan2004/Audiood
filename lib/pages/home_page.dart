@@ -1,9 +1,10 @@
+import 'package:audiood/pages/menu_page.dart';
+import 'package:audiood/pages/settings_page.dart';
 import 'package:flutter/material.dart';
 import '../models/models.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
-
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
@@ -99,7 +100,13 @@ class _HomeScreenState extends State<HomeScreen> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Icon(Icons.menu, color: Colors.white),
+                              GestureDetector(
+                                child: const Icon(
+                                  Icons.menu,
+                                  color: Colors.white,
+                                ),
+                                onTap: () => MenuPage(),
+                              ),
 
                               // The Glassmorphism Name Banner
                               Container(
@@ -125,7 +132,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                               ),
 
-                              const Icon(Icons.settings, color: Colors.white),
+                              GestureDetector(
+                                child: const Icon(
+                                  Icons.settings,
+                                  color: Colors.white,
+                                ),
+                                onTap: () => SettingsPage(),
+                              ),
                             ],
                           ),
 
