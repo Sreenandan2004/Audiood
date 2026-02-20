@@ -117,7 +117,51 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     }
   }
+  void _confirmDelete(FriendProfile profile, int index) {
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      backgroundColor: Colors.grey[900],
+      title: const Text("Delete Audio?", style: TextStyle(color: Colors.white)),
+      content: const Text(
+        "This will permanently remove the file from your device.",
+        style: TextStyle(color: Colors.white70),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text("CANCEL"),
+        ),
+        TextButton(
+          onPressed: () async {
+            final filePath = profile.voiceNotes[index].filePath;
+            Navigator.pop(context); // Close dialog
 
+            try {
+              // 1. Delete the physical file from storage
+              final file = File(filePath);
+              if (await file.exists()) {
+                await file.delete();
+              }
+
+              // 2. Remove from the UI list
+              setState(() {
+                profile.voiceNotes.removeAt(index);
+              });
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text("Audio deleted")),
+              );
+            } catch (e) {
+              debugPrint("Error deleting file: $e");
+            }
+          },
+          child: const Text("DELETE", style: TextStyle(color: Colors.red)),
+        ),
+      ],
+    ),
+  );
+}
   @override
   void dispose() {
     _pageController.dispose();
@@ -217,7 +261,10 @@ class _HomeScreenState extends State<HomeScreen> {
         itemCount: profile.voiceNotes.length,
         itemBuilder: (context, index) {
           final vn = profile.voiceNotes[index];
-          return ListTile(
+          return GestureDetector(
+          // --- LONG PRESS TO DELETE ---
+          onLongPress: () => _confirmDelete(profile, index),
+          child: ListTile(
             contentPadding: const EdgeInsets.symmetric(vertical: 8.0),
             leading: _buildAudioIcon(Icons.play_arrow),
             title: Text(vn.title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
@@ -226,7 +273,7 @@ class _HomeScreenState extends State<HomeScreen> {
               onTap: () => Share.shareXFiles([XFile(vn.filePath)]),
               child: _buildAudioIcon(Icons.share),
             ),
-          );
+          ),);
         },
       ),
     );
