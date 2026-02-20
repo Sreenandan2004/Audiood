@@ -15,17 +15,7 @@ subprojects {
 subprojects {
     project.evaluationDependsOn(":app")
 }
-// plugins {
-//     id("com.android.application") version "8.2.1" apply false
-//     id("org.jetbrains.kotlin.android") version "1.9.22" apply false
-// }
+
 tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
-}
-subprojects {
-    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
-        kotlinOptions {
-            jvmTarget = "17"
-        }
-    }
 }
