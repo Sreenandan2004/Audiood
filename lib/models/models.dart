@@ -4,8 +4,14 @@ class VoiceNote {
   final String title;
   final String mood;
   final String duration;
+  final String filePath; // <--- Add this
 
-  VoiceNote({required this.duration, required this.mood, required this.title});
+  VoiceNote({
+    required this.duration,
+    required this.mood,
+    required this.title,
+    required this.filePath, // <--- Add this
+  });
 }
 
 class FriendProfile {
