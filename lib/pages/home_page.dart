@@ -5,10 +5,12 @@ import 'package:share_handler/share_handler.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
+import 'package:file_picker/file_picker.dart';
 
 // Internal imports
 import 'package:audiood/pages/menu_page.dart';
 import 'package:audiood/pages/settings_page.dart';
+import 'package:audiood/widgets/target_picker.dart';
 import '../models/models.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -34,46 +36,85 @@ class _HomeScreenState extends State<HomeScreen> {
     initShareHandler();
   }
 
+  // --- LOGIC: HANDLE SHARE & PICK ---
+
   Future<void> initShareHandler() async {
     await Future.delayed(const Duration(milliseconds: 500));
     final handler = ShareHandler.instance;
+    
     try {
-    final initialMedia = await handler.getInitialSharedMedia();
-    if (initialMedia != null) _handleIncomingAudio(initialMedia);
-} catch (e) {
-    debugPrint("ShareHandler Error: $e");
-  }
+      final initialMedia = await handler.getInitialSharedMedia();
+      if (initialMedia != null) _handleIncomingMedia(initialMedia);
+    } catch (e) {
+      debugPrint("Initial Share Error: $e");
+    }
+
     handler.sharedMediaStream.listen((SharedMedia media) {
-      _handleIncomingAudio(media);
+      _handleIncomingMedia(media);
     });
   }
 
-  Future<void> _handleIncomingAudio(SharedMedia incoming) async {
-    final attachment = incoming.attachments?.first;
-    if (attachment != null && attachment.path != null) {
-      final directory = await getApplicationDocumentsDirectory();
-      final fileName = p.basename(attachment.path!);
-      final savedPath = '${directory.path}/$fileName';
-
-      await File(attachment.path!).copy(savedPath);
-
-      setState(() {
-        // FIXED: Providing all 4 required arguments for your VoiceNote model
-        profiles[currentPage].voiceNotes.add(
-          VoiceNote(
-            title: fileName,           // Using the actual filename
-            mood: "Unknown",           // Default mood
-            duration: "0:00",          // Default duration
-            filePath: savedPath,       // Using 'filePath' to match your model
-          ),
-        );
-      });
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Audio saved to ${profiles[currentPage].name}!")),
-        );
+  void _handleIncomingMedia(SharedMedia media) {
+    if (media.attachments != null && media.attachments!.isNotEmpty) {
+      final path = media.attachments?.first!.path;
+      if (path != null) {
+        _triggerTargetSelection(path);
       }
+    }
+  }
+
+  Future<void> _pickLocalAudio() async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(type: FileType.audio);
+      if (result != null && result.files.single.path != null) {
+        _triggerTargetSelection(result.files.single.path!);
+      }
+    } catch (e) {
+      debugPrint("File Picker Error: $e");
+    }
+  }
+
+  void _triggerTargetSelection(String audioPath) {
+    TargetPicker.show(
+      context: context,
+      profiles: profiles,
+      onSelect: (selectedProfile) {
+        _processAndSaveAudio(audioPath, selectedProfile);
+      },
+      onAddNewAndSelect: (newName) {
+        final newProfile = FriendProfile(
+          name: newName,
+          imagePath: "assets/images/default.jpg",
+          voiceNotes: [],
+        );
+        setState(() {
+          profiles.add(newProfile);
+        });
+        _processAndSaveAudio(audioPath, newProfile);
+      },
+    );
+  }
+
+  Future<void> _processAndSaveAudio(String sourcePath, FriendProfile target) async {
+    final directory = await getApplicationDocumentsDirectory();
+    final fileName = p.basename(sourcePath);
+    final savedPath = '${directory.path}/$fileName';
+
+    await File(sourcePath).copy(savedPath);
+
+    setState(() {
+      target.voiceNotes.add(VoiceNote(
+        title: fileName,
+        mood: "Saved",
+        duration: "0:00",
+        filePath: savedPath,
+      ));
+    });
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Audio assigned to ${target.name}!")),
+      );
     }
   }
 
@@ -87,7 +128,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       floatingActionButton: FloatingActionButton(
-        onPressed: () {}, 
+        onPressed: _pickLocalAudio,
         backgroundColor: Colors.yellow[300],
         child: const Icon(Icons.add, color: Colors.black),
       ),
@@ -102,7 +143,16 @@ class _HomeScreenState extends State<HomeScreen> {
               final profile = profiles[index];
               return Stack(
                 children: [
-                  Positioned.fill(child: Image.asset(profile.imagePath, fit: BoxFit.cover)),
+                  Positioned.fill(
+                    child: Image.asset(
+                      profile.imagePath,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, _, __) => Container(
+                        color: Colors.black,
+                        child: const Icon(Icons.person, size: 100, color: Colors.white12),
+                      ),
+                    ),
+                  ),
                   _buildGradientOverlay(),
                   SafeArea(
                     child: Padding(
@@ -133,12 +183,7 @@ class _HomeScreenState extends State<HomeScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Colors.black.withOpacity(0.6),
-              Colors.transparent,
-              Colors.black.withOpacity(0.9),
-              Colors.black,
-            ],
+            colors: [Colors.black.withOpacity(0.6), Colors.transparent, Colors.black.withOpacity(0.9), Colors.black],
             stops: const [0.0, 0.4, 0.7, 1.0],
           ),
         ),
@@ -150,28 +195,18 @@ class _HomeScreenState extends State<HomeScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        IconButton(
-          icon: const Icon(Icons.menu, color: Colors.white),
-          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MenuPage())),
+        IconButton(icon: const Icon(Icons.menu, color: Colors.white), onPressed: () {}),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 10),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.2),
+            borderRadius: BorderRadius.circular(30),
+            border: Border.all(color: Colors.white.withOpacity(0.3)),
+          ),
+          child: Text(name, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
         ),
-        _buildNameBanner(name),
-        IconButton(
-          icon: const Icon(Icons.settings, color: Colors.white),
-          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsPage())),
-        ),
+        IconButton(icon: const Icon(Icons.settings, color: Colors.white), onPressed: () {}),
       ],
-    );
-  }
-
-  Widget _buildNameBanner(String name) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.2),
-        borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: Colors.white.withOpacity(0.3)),
-      ),
-      child: Text(name, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
     );
   }
 
@@ -181,16 +216,14 @@ class _HomeScreenState extends State<HomeScreen> {
         padding: const EdgeInsets.only(top: 20, bottom: 80),
         itemCount: profile.voiceNotes.length,
         itemBuilder: (context, index) {
-          // FIXED: Accessing the filePath property from your VoiceNote model
           final vn = profile.voiceNotes[index];
-
           return ListTile(
             contentPadding: const EdgeInsets.symmetric(vertical: 8.0),
             leading: _buildAudioIcon(Icons.play_arrow),
             title: Text(vn.title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             subtitle: Text("${vn.mood} • ${vn.duration}", style: const TextStyle(color: Colors.white54)),
             trailing: GestureDetector(
-              onTap: () => Share.shareXFiles([XFile(vn.filePath)], text: 'From Audiood'),
+              onTap: () => Share.shareXFiles([XFile(vn.filePath)]),
               child: _buildAudioIcon(Icons.share),
             ),
           );
@@ -220,27 +253,23 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               IconButton(
                 icon: const Icon(Icons.chevron_left, color: Colors.white),
-                onPressed: () {
-                  if (currentPage > 0) {
-                    _pageController.previousPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
-                  }
-                },
+                onPressed: () => _pageController.previousPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut),
               ),
               ...List.generate(profiles.length, (index) {
                 return Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 6.0),
                   child: index == currentPage
-                      ? CircleAvatar(radius: 14, backgroundImage: AssetImage(profiles[index].imagePath))
+                      ? CircleAvatar(
+                          radius: 14, 
+                          backgroundImage: AssetImage(profiles[index].imagePath),
+                          onBackgroundImageError: (_, __) => const Icon(Icons.person),
+                        )
                       : Container(width: 8, height: 8, decoration: const BoxDecoration(color: Colors.white54, shape: BoxShape.circle)),
                 );
               }),
               IconButton(
                 icon: const Icon(Icons.chevron_right, color: Colors.white),
-                onPressed: () {
-                  if (currentPage < profiles.length - 1) {
-                    _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
-                  }
-                },
+                onPressed: () => _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut),
               ),
             ],
           ),
