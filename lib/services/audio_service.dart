@@ -2,11 +2,39 @@ import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:file_picker/file_picker.dart';
+import 'package:audioplayers/audioplayers.dart';
 
 class AudioService {
+  static final AudioPlayer _audioPlayer = AudioPlayer();
+  static AudioPlayer get player => _audioPlayer;
+  static Stream<PlayerState> get playerStateStream =>
+      _audioPlayer.onPlayerStateChanged;
+  static String? currentPlayingPath;
+  static Future<void> playLocalFile(String filePath) async {
+    try {
+      // 1. Stop any currently playing audio
+      if (currentPlayingPath == filePath && _audioPlayer.state == PlayerState.playing) {
+        await _audioPlayer.pause();
+      } else {
+        await _audioPlayer.stop();
+        currentPlayingPath = filePath;
+        await _audioPlayer.play(DeviceFileSource(filePath));
+      }
+    } catch (e) {
+      print("Error playing audio: $e");
+    }
+  }
+
+  static Future<void> stopAudio() async {
+    await _audioPlayer.stop();
+    currentPlayingPath = null;
+  }
+
   // Logic for picking a local file from storage
   static Future<String?> pickAudio() async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(type: FileType.audio);
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.audio,
+    );
     return result?.files.single.path;
   }
 

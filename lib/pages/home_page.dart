@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:share_handler/share_handler.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:path/path.dart' as p;
-
+import 'package:audioplayers/audioplayers.dart';
 // Internal imports
 import 'package:audiood/pages/menu_page.dart';
 import 'package:audiood/pages/settings_page.dart';
@@ -232,15 +232,34 @@ class _HomeScreenState extends State<HomeScreen> {
                 itemCount: profile.voiceNotes.length,
                 itemBuilder: (context, index) {
                   final vn = profile.voiceNotes[index];
-                  return AudioTile(
-                    title: vn.title,
-                    subtitle: "${vn.mood} • ${vn.duration}",
-                    onPlay: () {
-                      // Logic for audioplayers package goes here later
-                      debugPrint("Playing: ${vn.filePath}");
+                  return StreamBuilder<PlayerState>(
+                    stream: AudioService.playerStateStream,
+                    builder: (context, snapshot) {
+                      final state = snapshot.data;
+                      // Check if THIS specific file is the one playing
+                      final bool isThisPlaying =
+                          state == PlayerState.playing &&
+                          AudioService.currentPlayingPath == vn.filePath;
+
+                      return AudioTile(
+                        title: vn.title,
+                        subtitle: "${vn.mood} • ${vn.duration}",
+                        isPlaying:
+                            isThisPlaying, // <--- This was the missing argument
+                        onPlay: () {
+                          // Logic for audioplayers package goes here later
+                          AudioService.playLocalFile(vn.filePath);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text("Playing ${vn.title}..."),
+                              duration: const Duration(seconds: 2),
+                            ),
+                          );
+                        },
+                        onShare: () => Share.shareXFiles([XFile(vn.filePath)]),
+                        onLongPress: () => _confirmDelete(profile, index),
+                      );
                     },
-                    onShare: () => Share.shareXFiles([XFile(vn.filePath)]),
-                    onLongPress: () => _confirmDelete(profile, index),
                   );
                 },
               ),

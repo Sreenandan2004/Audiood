@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 class AudioTile extends StatelessWidget {
   final String title;
   final String subtitle;
+  final bool isPlaying;
   final VoidCallback onPlay;
   final VoidCallback onShare;
   final VoidCallback onLongPress;
@@ -11,6 +12,7 @@ class AudioTile extends StatelessWidget {
     super.key,
     required this.title,
     required this.subtitle,
+    required this.isPlaying,
     required this.onPlay,
     required this.onShare,
     required this.onLongPress,
@@ -25,19 +27,19 @@ class AudioTile extends StatelessWidget {
         // Wrapped the leading icon in a GestureDetector for play functionality
         leading: GestureDetector(
           onTap: onPlay,
-          child: _buildIcon(Icons.play_arrow),
+          child: _buildIcon(isPlaying ? Icons.stop : Icons.play_arrow),
         ),
         title: Text(
-          title, 
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)
+          title,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
         ),
-        subtitle: Text(
-          subtitle, 
-          style: const TextStyle(color: Colors.white54)
-        ),
+        subtitle: Text(subtitle, style: const TextStyle(color: Colors.white54)),
         trailing: GestureDetector(
-          onTap: onShare, 
-          child: _buildIcon(Icons.share)
+          onTap: onShare,
+          child: _buildIcon(Icons.share),
         ),
       ),
     );
@@ -48,8 +50,8 @@ class AudioTile extends StatelessWidget {
       height: 48,
       width: 48,
       decoration: BoxDecoration(
-        color: Colors.white70, 
-        borderRadius: BorderRadius.circular(16)
+        color: Colors.white70,
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Icon(icon, color: Colors.black),
     );
