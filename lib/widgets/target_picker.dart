@@ -11,23 +11,14 @@ class TargetPicker {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.grey[900],
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (context) {
         return Container(
           padding: const EdgeInsets.symmetric(vertical: 20),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
-                "Align audio to...",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              const Text("Align audio to...", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 10),
               Flexible(
                 child: ListView.builder(
@@ -40,10 +31,7 @@ class TargetPicker {
                         backgroundImage: AssetImage(profile.imagePath),
                         onBackgroundImageError: (_, __) => const Icon(Icons.person),
                       ),
-                      title: Text(
-                        profile.name,
-                        style: const TextStyle(color: Colors.white),
-                      ),
+                      title: Text(profile.name, style: const TextStyle(color: Colors.white)),
                       onTap: () {
                         onSelect(profile);
                         Navigator.pop(context);
@@ -55,10 +43,7 @@ class TargetPicker {
               const Divider(color: Colors.white24),
               ListTile(
                 leading: const Icon(Icons.person_add, color: Colors.yellow),
-                title: const Text(
-                  "Create New Person & Add",
-                  style: TextStyle(color: Colors.yellow, fontWeight: FontWeight.bold),
-                ),
+                title: const Text("Create New Person & Add", style: TextStyle(color: Colors.yellow, fontWeight: FontWeight.bold)),
                 onTap: () {
                   Navigator.pop(context);
                   _showNewPersonDialog(context, onAddNewAndSelect);
@@ -89,10 +74,7 @@ class TargetPicker {
           ),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("CANCEL"),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("CANCEL")),
           ElevatedButton(
             onPressed: () {
               if (controller.text.isNotEmpty) {
