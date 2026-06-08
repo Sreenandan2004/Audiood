@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../models/models.dart';
 
@@ -28,8 +29,11 @@ class TargetPicker {
                     final profile = profiles[index];
                     return ListTile(
                       leading: CircleAvatar(
-                        backgroundImage: AssetImage(profile.imagePath),
-                        onBackgroundImageError: (_, __) => const Icon(Icons.person),
+                        backgroundImage: profile.imagePath.startsWith('assets/')
+                            ? AssetImage(profile.imagePath)
+                            : FileImage(File(profile.imagePath)) as ImageProvider,
+                        onBackgroundImageError: (_, __) {},
+                        child: const Icon(Icons.person, color: Colors.white),
                       ),
                       title: Text(profile.name, style: const TextStyle(color: Colors.white)),
                       onTap: () {
