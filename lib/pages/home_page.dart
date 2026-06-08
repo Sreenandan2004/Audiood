@@ -3,14 +3,13 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:share_handler/share_handler.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:path/path.dart' as p;
 import 'package:audioplayers/audioplayers.dart';
-import 'package:file_picker/file_picker.dart';
 // Internal imports
 import 'package:audiood/pages/menu_page.dart';
 import 'package:audiood/pages/settings_page.dart';
 import 'package:audiood/services/audio_service.dart';
 import 'package:audiood/services/persistence_service.dart';
+import 'package:audiood/services/profile_service.dart';
 import 'package:audiood/widgets/target_picker.dart';
 import '../models/models.dart';
 import 'package:audiood/widgets/audio_tile.dart';
@@ -77,15 +76,11 @@ class _HomeScreenState extends State<HomeScreen> {
         _finalizeAudioSave(audioPath, selectedProfile);
       },
       onAddNewAndSelect: (newName) async {
-        final newProfile = FriendProfile(
+        final newProfile = await ProfileService.createNewPerson(
           name: newName,
-          imagePath: "assets/images/default.jpg",
-          voiceNotes: [],
+          profiles: profiles,
         );
-        setState(() {
-          profiles.add(newProfile);
-        });
-        await PersistenceService.saveProfiles(profiles);
+        setState(() {});
         _finalizeAudioSave(audioPath, newProfile);
       },
     );
@@ -169,16 +164,11 @@ class _HomeScreenState extends State<HomeScreen> {
           ElevatedButton(
             onPressed: () async {
               if (controller.text.isNotEmpty) {
-                final newName = controller.text.toUpperCase();
-                final newProfile = FriendProfile(
-                  name: newName,
-                  imagePath: "assets/images/default.jpg",
-                  voiceNotes: [],
+                await ProfileService.createNewPerson(
+                  name: controller.text,
+                  profiles: profiles,
                 );
-                setState(() {
-                  profiles.add(newProfile);
-                });
-                await PersistenceService.saveProfiles(profiles);
+                setState(() {});
                 if (context.mounted) Navigator.pop(context);
 
                 // Slide the page controller to the newly created user card
@@ -201,32 +191,17 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _updateProfilePhoto(FriendProfile profile) async {
-    try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
-        type: FileType.image,
-      );
-      if (result != null && result.files.single.path != null) {
-        final path = result.files.single.path!;
-        final savedImagePath = await AudioService.saveToPermanentStorage(path);
-        setState(() {
-          final index = profiles.indexOf(profile);
-          if (index != -1) {
-            profiles[index] = FriendProfile(
-              name: profile.name,
-              imagePath: savedImagePath,
-              voiceNotes: profile.voiceNotes,
-            );
-          }
-        });
-        await PersistenceService.saveProfiles(profiles);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Profile photo updated for ${profile.name}!")),
-          );
-        }
+    final updated = await ProfileService.updateProfilePhoto(
+      profile: profile,
+      profiles: profiles,
+    );
+    if (updated != null) {
+      setState(() {});
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Profile photo updated for ${profile.name}!")),
+        );
       }
-    } catch (e) {
-      debugPrint("Error picking profile photo: $e");
     }
   }
 
@@ -234,43 +209,18 @@ class _HomeScreenState extends State<HomeScreen> {
     String sourcePath,
     FriendProfile target,
   ) async {
-    try {
-      final savedPath = await AudioService.saveToPermanentStorage(sourcePath);
-
-      // Resolve the actual duration of the saved audio file
-      String durationStr = "0:00";
-      try {
-        final tempPlayer = AudioPlayer();
-        await tempPlayer.setSource(DeviceFileSource(savedPath));
-        final duration = await tempPlayer.getDuration();
-        if (duration != null) {
-          final minutes = duration.inMinutes;
-          final seconds = duration.inSeconds.remainder(60).toString().padLeft(2, '0');
-          durationStr = "$minutes:$seconds";
-        }
-        await tempPlayer.dispose();
-      } catch (e) {
-        debugPrint("Error getting duration on save: $e");
-      }
-
-      setState(() {
-        target.voiceNotes.add(
-          VoiceNote(
-            title: p.basename(sourcePath),
-            mood: "Saved",
-            duration: durationStr,
-            filePath: savedPath,
-          ),
-        );
-      });
-      await PersistenceService.saveProfiles(profiles);
+    final updated = await ProfileService.addVoiceNote(
+      sourcePath: sourcePath,
+      target: target,
+      profiles: profiles,
+    );
+    if (updated != null) {
+      setState(() {});
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Audio assigned to ${target.name}!")),
         );
       }
-    } catch (e) {
-      debugPrint("Error saving audio: $e");
     }
   }
 
@@ -295,13 +245,12 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               TextButton(
                 onPressed: () async {
-                  await AudioService.deletePhysicalFile(
-                    profile.voiceNotes[index].filePath,
+                  await ProfileService.deleteVoiceNote(
+                    profile: profile,
+                    index: index,
+                    profiles: profiles,
                   );
-                  setState(() {
-                    profile.voiceNotes.removeAt(index);
-                  });
-                  await PersistenceService.saveProfiles(profiles);
+                  setState(() {});
                   if (context.mounted) Navigator.pop(context);
                 },
                 child: const Text(
