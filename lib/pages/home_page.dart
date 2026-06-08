@@ -5,10 +5,12 @@ import 'package:share_handler/share_handler.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:path/path.dart' as p;
 import 'package:audioplayers/audioplayers.dart';
+import 'package:file_picker/file_picker.dart';
 // Internal imports
 import 'package:audiood/pages/menu_page.dart';
 import 'package:audiood/pages/settings_page.dart';
 import 'package:audiood/services/audio_service.dart';
+import 'package:audiood/services/persistence_service.dart';
 import 'package:audiood/widgets/target_picker.dart';
 import '../models/models.dart';
 import 'package:audiood/widgets/audio_tile.dart';
@@ -23,30 +25,22 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final PageController _pageController = PageController();
   int currentPage = 0;
-
-  // Initial Data
-  final List<FriendProfile> profiles = [
-    FriendProfile(
-      name: "ZONAL",
-      imagePath: "assets/images/Zonal.jpg",
-      voiceNotes: [],
-    ),
-    FriendProfile(
-      name: "ABHAI",
-      imagePath: "assets/images/Abhai.jpg",
-      voiceNotes: [],
-    ),
-    FriendProfile(
-      name: "SURA",
-      imagePath: "assets/images/Sura.jpg",
-      voiceNotes: [],
-    ),
-  ];
+  List<FriendProfile> profiles = [];
+  bool isLoading = true;
 
   @override
   void initState() {
     super.initState();
+    _loadSavedData();
     initShareHandler();
+  }
+
+  Future<void> _loadSavedData() async {
+    final loaded = await PersistenceService.loadProfiles();
+    setState(() {
+      profiles = loaded;
+      isLoading = false;
+    });
   }
 
   // --- LOGIC: EXTERNAL SHARE & LOCAL PICKER ---
@@ -82,7 +76,7 @@ class _HomeScreenState extends State<HomeScreen> {
       onSelect: (selectedProfile) {
         _finalizeAudioSave(audioPath, selectedProfile);
       },
-      onAddNewAndSelect: (newName) {
+      onAddNewAndSelect: (newName) async {
         final newProfile = FriendProfile(
           name: newName,
           imagePath: "assets/images/default.jpg",
@@ -91,9 +85,149 @@ class _HomeScreenState extends State<HomeScreen> {
         setState(() {
           profiles.add(newProfile);
         });
+        await PersistenceService.saveProfiles(profiles);
         _finalizeAudioSave(audioPath, newProfile);
       },
     );
+  }
+
+  void _showFabActionsBottomSheet() {
+    final currentProfile = profiles.isEmpty ? null : profiles[currentPage];
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.grey[900],
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                "Choose Action",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
+              if (currentProfile != null)
+                ListTile(
+                  leading: const Icon(Icons.audio_file, color: Colors.yellow),
+                  title: Text(
+                    "Add Voice for ${currentProfile.name}",
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    final path = await AudioService.pickAudio();
+                    if (path != null) {
+                      _finalizeAudioSave(path, currentProfile);
+                    }
+                  },
+                ),
+              ListTile(
+                leading: const Icon(Icons.person_add, color: Colors.yellow),
+                title: const Text(
+                  "Create New Person",
+                  style: TextStyle(color: Colors.white),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showAddPersonDialog();
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showAddPersonDialog() {
+    final TextEditingController controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[900],
+        title: const Text("Create New Person", style: TextStyle(color: Colors.white)),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          style: const TextStyle(color: Colors.white),
+          decoration: const InputDecoration(
+            hintText: "Enter name",
+            hintStyle: TextStyle(color: Colors.white54),
+            enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.yellow)),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("CANCEL")),
+          ElevatedButton(
+            onPressed: () async {
+              if (controller.text.isNotEmpty) {
+                final newName = controller.text.toUpperCase();
+                final newProfile = FriendProfile(
+                  name: newName,
+                  imagePath: "assets/images/default.jpg",
+                  voiceNotes: [],
+                );
+                setState(() {
+                  profiles.add(newProfile);
+                });
+                await PersistenceService.saveProfiles(profiles);
+                if (context.mounted) Navigator.pop(context);
+
+                // Slide the page controller to the newly created user card
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (_pageController.hasClients) {
+                    _pageController.animateToPage(
+                      profiles.length - 1,
+                      duration: const Duration(milliseconds: 400),
+                      curve: Curves.easeInOut,
+                    );
+                  }
+                });
+              }
+            },
+            child: const Text("CREATE"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _updateProfilePhoto(FriendProfile profile) async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+      );
+      if (result != null && result.files.single.path != null) {
+        final path = result.files.single.path!;
+        final savedImagePath = await AudioService.saveToPermanentStorage(path);
+        setState(() {
+          final index = profiles.indexOf(profile);
+          if (index != -1) {
+            profiles[index] = FriendProfile(
+              name: profile.name,
+              imagePath: savedImagePath,
+              voiceNotes: profile.voiceNotes,
+            );
+          }
+        });
+        await PersistenceService.saveProfiles(profiles);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Profile photo updated for ${profile.name}!")),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint("Error picking profile photo: $e");
+    }
   }
 
   Future<void> _finalizeAudioSave(
@@ -102,16 +236,34 @@ class _HomeScreenState extends State<HomeScreen> {
   ) async {
     try {
       final savedPath = await AudioService.saveToPermanentStorage(sourcePath);
+
+      // Resolve the actual duration of the saved audio file
+      String durationStr = "0:00";
+      try {
+        final tempPlayer = AudioPlayer();
+        await tempPlayer.setSource(DeviceFileSource(savedPath));
+        final duration = await tempPlayer.getDuration();
+        if (duration != null) {
+          final minutes = duration.inMinutes;
+          final seconds = duration.inSeconds.remainder(60).toString().padLeft(2, '0');
+          durationStr = "$minutes:$seconds";
+        }
+        await tempPlayer.dispose();
+      } catch (e) {
+        debugPrint("Error getting duration on save: $e");
+      }
+
       setState(() {
         target.voiceNotes.add(
           VoiceNote(
             title: p.basename(sourcePath),
             mood: "Saved",
-            duration: "0:00",
+            duration: durationStr,
             filePath: savedPath,
           ),
         );
       });
+      await PersistenceService.saveProfiles(profiles);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Audio assigned to ${target.name}!")),
@@ -149,7 +301,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   setState(() {
                     profile.voiceNotes.removeAt(index);
                   });
-                  if (mounted) Navigator.pop(context);
+                  await PersistenceService.saveProfiles(profiles);
+                  if (context.mounted) Navigator.pop(context);
                 },
                 child: const Text(
                   "DELETE",
@@ -169,12 +322,17 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (isLoading) {
+      return const Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(
+          child: CircularProgressIndicator(color: Colors.yellow),
+        ),
+      );
+    }
     return Scaffold(
       floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          final path = await AudioService.pickAudio();
-          if (path != null) _triggerTargetSelection(path);
-        },
+        onPressed: _showFabActionsBottomSheet,
         backgroundColor: Colors.yellow[300],
         child: const Icon(Icons.add, color: Colors.black),
       ),
@@ -190,19 +348,17 @@ class _HomeScreenState extends State<HomeScreen> {
               return Stack(
                 children: [
                   Positioned.fill(
-                    child: Image.asset(
-                      profile.imagePath,
-                      fit: BoxFit.cover,
-                      errorBuilder:
-                          (context, _, __) => Container(
-                            color: Colors.black,
-                            child: const Icon(
-                              Icons.person,
-                              size: 100,
-                              color: Colors.white12,
-                            ),
+                    child: profile.imagePath.startsWith('assets/')
+                        ? Image.asset(
+                            profile.imagePath,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, _, __) => _buildFallbackBackground(),
+                          )
+                        : Image.file(
+                            File(profile.imagePath),
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, _, __) => _buildFallbackBackground(),
                           ),
-                    ),
                   ),
                   _buildGradientOverlay(),
                   _buildContent(profile),
@@ -216,6 +372,17 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Widget _buildFallbackBackground() {
+    return Container(
+      color: Colors.black,
+      child: const Icon(
+        Icons.person,
+        size: 100,
+        color: Colors.white12,
+      ),
+    );
+  }
+
   // --- UI COMPONENTS ---
 
   Widget _buildContent(FriendProfile profile) {
@@ -224,7 +391,7 @@ class _HomeScreenState extends State<HomeScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
         child: Column(
           children: [
-            _buildHeader(profile.name),
+            _buildHeader(profile),
             const Spacer(),
             Expanded(
               child: ListView.builder(
@@ -244,14 +411,12 @@ class _HomeScreenState extends State<HomeScreen> {
                       return AudioTile(
                         title: vn.title,
                         subtitle: "${vn.mood} • ${vn.duration}",
-                        isPlaying:
-                            isThisPlaying, // <--- This was the missing argument
+                        isPlaying: isThisPlaying,
                         onPlay: () {
-                          // Logic for audioplayers package goes here later
                           AudioService.playLocalFile(vn.filePath);
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text("Playing ${vn.title}..."),
+                              content: Text(isThisPlaying ? "Paused" : "Playing ${vn.title}..."),
                               duration: const Duration(seconds: 2),
                             ),
                           );
@@ -278,9 +443,9 @@ class _HomeScreenState extends State<HomeScreen> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Colors.black.withOpacity(0.6),
+              Colors.black.withValues(alpha: 0.6),
               Colors.transparent,
-              Colors.black.withOpacity(0.9),
+              Colors.black.withValues(alpha: 0.9),
               Colors.black,
             ],
             stops: const [0.0, 0.4, 0.7, 1.0],
@@ -290,7 +455,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildHeader(String name) {
+  Widget _buildHeader(FriendProfile profile) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -302,20 +467,30 @@ class _HomeScreenState extends State<HomeScreen> {
                 MaterialPageRoute(builder: (_) => const MenuPage()),
               ),
         ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 10),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.2),
-            borderRadius: BorderRadius.circular(30),
-            border: Border.all(color: Colors.white.withOpacity(0.3)),
-          ),
-          child: Text(
-            name,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.2,
+        GestureDetector(
+          onTap: () => _updateProfilePhoto(profile),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(30),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  profile.name,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Icon(Icons.photo_camera, color: Colors.white70, size: 16),
+              ],
             ),
           ),
         ),
@@ -331,18 +506,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildAudioIcon(IconData icon) {
-    return Container(
-      height: 48,
-      width: 48,
-      decoration: BoxDecoration(
-        color: Colors.white70,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Icon(icon, color: Colors.black),
-    );
-  }
-
   Widget _buildBottomSlider() {
     return Positioned(
       bottom: 40,
@@ -353,7 +516,7 @@ class _HomeScreenState extends State<HomeScreen> {
           height: 45,
           padding: const EdgeInsets.symmetric(horizontal: 12),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.2),
+            color: Colors.white.withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(25),
           ),
           child: Row(
@@ -368,17 +531,18 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
               ),
               ...List.generate(profiles.length, (index) {
+                final imagePath = profiles[index].imagePath;
                 return Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 6.0),
                   child:
                       index == currentPage
                           ? CircleAvatar(
                             radius: 14,
-                            backgroundImage: AssetImage(
-                              profiles[index].imagePath,
-                            ),
-                            onBackgroundImageError:
-                                (_, __) => const Icon(Icons.person),
+                            backgroundImage: imagePath.startsWith('assets/')
+                                ? AssetImage(imagePath)
+                                : FileImage(File(imagePath)) as ImageProvider,
+                            onBackgroundImageError: (_, __) {},
+                            child: const Icon(Icons.person, size: 14, color: Colors.white),
                           )
                           : Container(
                             width: 8,

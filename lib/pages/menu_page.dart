@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:audiood/pages/help_page.dart';
 
 class MenuPage extends StatelessWidget {
   const MenuPage({super.key});
@@ -59,7 +60,10 @@ class MenuPage extends StatelessWidget {
             icon: Icons.help_outline,
             title: 'Help & Support',
             onTap: () {
-              // TODO: Navigate to Help
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const HelpSupportPage()),
+              );
             },
           ),
         ],
