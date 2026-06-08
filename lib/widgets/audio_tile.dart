@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:audiood/services/audio_service.dart';
 
 class AudioTile extends StatelessWidget {
   final String title;
@@ -18,30 +19,97 @@ class AudioTile extends StatelessWidget {
     required this.onLongPress,
   });
 
+  String _formatDuration(Duration duration) {
+    final minutes = duration.inMinutes;
+    final seconds = duration.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return "$minutes:$seconds";
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onLongPress: onLongPress,
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(vertical: 8.0),
-        // Wrapped the leading icon in a GestureDetector for play functionality
-        leading: GestureDetector(
-          onTap: onPlay,
-          child: _buildIcon(isPlaying ? Icons.stop : Icons.play_arrow),
-        ),
-        title: Text(
-          title,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            contentPadding: const EdgeInsets.symmetric(vertical: 8.0),
+            leading: GestureDetector(
+              onTap: onPlay,
+              child: _buildIcon(isPlaying ? Icons.pause : Icons.play_arrow),
+            ),
+            title: Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            subtitle: Text(subtitle, style: const TextStyle(color: Colors.white54)),
+            trailing: GestureDetector(
+              onTap: onShare,
+              child: _buildIcon(Icons.share),
+            ),
           ),
-        ),
-        subtitle: Text(subtitle, style: const TextStyle(color: Colors.white54)),
-        trailing: GestureDetector(
-          onTap: onShare,
-          child: _buildIcon(Icons.share),
-        ),
+          if (isPlaying) _buildProgressBar(context),
+        ],
       ),
+    );
+  }
+
+  Widget _buildProgressBar(BuildContext context) {
+    return StreamBuilder<Duration>(
+      stream: AudioService.player.onPositionChanged,
+      builder: (context, positionSnapshot) {
+        final position = positionSnapshot.data ?? Duration.zero;
+        return StreamBuilder<Duration>(
+          stream: AudioService.player.onDurationChanged,
+          builder: (context, durationSnapshot) {
+            final duration = durationSnapshot.data ?? Duration.zero;
+            final double progress = duration.inMilliseconds > 0
+                ? (position.inMilliseconds / duration.inMilliseconds).clamp(0.0, 1.0)
+                : 0.0;
+            return Padding(
+              padding: const EdgeInsets.only(left: 16.0, right: 16.0, bottom: 8.0),
+              child: Row(
+                children: [
+                  Text(
+                    _formatDuration(position),
+                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                  ),
+                  Expanded(
+                    child: SliderTheme(
+                      data: SliderTheme.of(context).copyWith(
+                        trackHeight: 2,
+                        thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+                        overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
+                        activeTrackColor: Colors.yellow[300],
+                        inactiveTrackColor: Colors.white24,
+                        thumbColor: Colors.yellow[300],
+                      ),
+                      child: Slider(
+                        value: progress,
+                        onChanged: (val) {
+                          final newPosition = Duration(
+                            milliseconds: (val * duration.inMilliseconds).toInt(),
+                          );
+                          AudioService.player.seek(newPosition);
+                        },
+                      ),
+                    ),
+                  ),
+                  Text(
+                    _formatDuration(duration),
+                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 

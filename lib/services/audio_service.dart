@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:file_picker/file_picker.dart';
@@ -10,18 +11,24 @@ class AudioService {
   static Stream<PlayerState> get playerStateStream =>
       _audioPlayer.onPlayerStateChanged;
   static String? currentPlayingPath;
+
   static Future<void> playLocalFile(String filePath) async {
     try {
-      // 1. Stop any currently playing audio
-      if (currentPlayingPath == filePath && _audioPlayer.state == PlayerState.playing) {
-        await _audioPlayer.pause();
+      if (currentPlayingPath == filePath) {
+        if (_audioPlayer.state == PlayerState.playing) {
+          await _audioPlayer.pause();
+        } else if (_audioPlayer.state == PlayerState.paused) {
+          await _audioPlayer.resume();
+        } else {
+          await _audioPlayer.play(DeviceFileSource(filePath));
+        }
       } else {
         await _audioPlayer.stop();
         currentPlayingPath = filePath;
         await _audioPlayer.play(DeviceFileSource(filePath));
       }
     } catch (e) {
-      print("Error playing audio: $e");
+      debugPrint("Error playing audio: $e");
     }
   }
 
