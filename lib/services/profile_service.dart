@@ -12,9 +12,13 @@ class ProfileService {
     required String sourcePath,
     required FriendProfile target,
     required List<FriendProfile> profiles,
+    String? title,
   }) async {
     try {
-      final savedPath = await AudioService.saveToPermanentStorage(sourcePath);
+      final savedPath = await AudioService.saveToPermanentStorage(
+        sourcePath,
+        targetName: title,
+      );
 
       // Resolve actual duration
       String durationStr = "0:00";
@@ -33,7 +37,7 @@ class ProfileService {
       }
 
       final updatedVoiceNote = VoiceNote(
-        title: p.basename(sourcePath),
+        title: title ?? p.basename(sourcePath),
         mood: "Saved",
         duration: durationStr,
         filePath: savedPath,
@@ -110,5 +114,46 @@ class ProfileService {
     profiles.add(newProfile);
     await PersistenceService.saveProfiles(profiles);
     return newProfile;
+  }
+
+  // 5. Rename an existing voice note and its physical file
+  static Future<void> renameVoiceNote({
+    required FriendProfile profile,
+    required int index,
+    required String newName,
+    required List<FriendProfile> profiles,
+  }) async {
+    try {
+      final voiceNote = profile.voiceNotes[index];
+      
+      // Stop the audio player if it's currently playing this file
+      if (AudioService.currentPlayingPath == voiceNote.filePath) {
+        await AudioService.stopAudio();
+      }
+
+      final extension = p.extension(voiceNote.filePath);
+      String baseName = p.basenameWithoutExtension(newName);
+      if (baseName.isEmpty) {
+        baseName = "audio";
+      }
+      final newTitle = '$baseName$extension';
+
+      // Rename physical file
+      final newPath = await AudioService.renamePhysicalFile(voiceNote.filePath, baseName);
+
+      // Create updated voice note
+      final updatedVoiceNote = VoiceNote(
+        title: newTitle,
+        mood: voiceNote.mood,
+        duration: voiceNote.duration,
+        filePath: newPath,
+      );
+
+      // Update in profile list
+      profile.voiceNotes[index] = updatedVoiceNote;
+      await PersistenceService.saveProfiles(profiles);
+    } catch (e) {
+      debugPrint("Error in renameVoiceNote: $e");
+    }
   }
 }

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:share_handler/share_handler.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:path/path.dart' as p;
 // Internal imports
 import 'package:audiood/pages/menu_page.dart';
 import 'package:audiood/pages/settings_page.dart';
@@ -209,10 +210,48 @@ class _HomeScreenState extends State<HomeScreen> {
     String sourcePath,
     FriendProfile target,
   ) async {
+    final defaultName = p.basenameWithoutExtension(sourcePath);
+    final nameController = TextEditingController(text: defaultName);
+
+    final String? chosenName = await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[900],
+        title: const Text("Name your Audio File", style: TextStyle(color: Colors.white)),
+        content: TextField(
+          controller: nameController,
+          autofocus: true,
+          style: const TextStyle(color: Colors.white),
+          decoration: const InputDecoration(
+            hintText: "Enter a descriptive name",
+            hintStyle: TextStyle(color: Colors.white54),
+            enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.yellow)),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, null),
+            child: const Text("CANCEL"),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final text = nameController.text.trim();
+              Navigator.pop(context, text.isNotEmpty ? text : defaultName);
+            },
+            child: const Text("SAVE"),
+          ),
+        ],
+      ),
+    );
+
+    if (chosenName == null) return;
+
     final updated = await ProfileService.addVoiceNote(
       sourcePath: sourcePath,
       target: target,
       profiles: profiles,
+      title: chosenName,
     );
     if (updated != null) {
       setState(() {});
@@ -260,6 +299,114 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
+    );
+  }
+
+  void _showAudioOptions(FriendProfile profile, int index) {
+    final voiceNote = profile.voiceNotes[index];
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.grey[900],
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Text(
+                  voiceNote.title,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              ListTile(
+                leading: const Icon(Icons.edit, color: Colors.yellow),
+                title: const Text(
+                  "Rename Audio File",
+                  style: TextStyle(color: Colors.white),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showRenameDialog(profile, index);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.delete, color: Colors.red),
+                title: const Text(
+                  "Delete Audio File",
+                  style: TextStyle(color: Colors.white),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _confirmDelete(profile, index);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showRenameDialog(FriendProfile profile, int index) {
+    final voiceNote = profile.voiceNotes[index];
+    final extension = p.extension(voiceNote.filePath);
+    String displayName = voiceNote.title;
+    if (extension.isNotEmpty && displayName.toLowerCase().endsWith(extension.toLowerCase())) {
+      displayName = displayName.substring(0, displayName.length - extension.length);
+    }
+
+    final TextEditingController controller = TextEditingController(text: displayName);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[900],
+        title: const Text("Rename Audio File", style: TextStyle(color: Colors.white)),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          style: const TextStyle(color: Colors.white),
+          decoration: const InputDecoration(
+            hintText: "Enter new name",
+            hintStyle: TextStyle(color: Colors.white54),
+            enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.yellow)),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("CANCEL"),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final text = controller.text.trim();
+              if (text.isNotEmpty) {
+                await ProfileService.renameVoiceNote(
+                  profile: profile,
+                  index: index,
+                  newName: text,
+                  profiles: profiles,
+                );
+                setState(() {});
+                if (context.mounted) Navigator.pop(context);
+              }
+            },
+            child: const Text("RENAME"),
+          ),
+        ],
+      ),
     );
   }
 
@@ -371,7 +518,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           );
                         },
                         onShare: () => Share.shareXFiles([XFile(vn.filePath)]),
-                        onLongPress: () => _confirmDelete(profile, index),
+                        onLongPress: () => _showAudioOptions(profile, index),
                       );
                     },
                   );

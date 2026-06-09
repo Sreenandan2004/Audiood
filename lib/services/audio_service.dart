@@ -46,12 +46,60 @@ class AudioService {
   }
 
   // Logic for moving file from temporary cache to permanent app storage
-  static Future<String> saveToPermanentStorage(String sourcePath) async {
+  static Future<String> saveToPermanentStorage(String sourcePath, {String? targetName}) async {
     final directory = await getApplicationDocumentsDirectory();
-    final fileName = p.basename(sourcePath);
-    final savedPath = '${directory.path}/$fileName';
+    final extension = p.extension(sourcePath);
+    String baseName = targetName != null 
+        ? _sanitizeFileName(p.basenameWithoutExtension(targetName))
+        : p.basenameWithoutExtension(sourcePath);
+    
+    if (baseName.isEmpty) {
+      baseName = "file";
+    }
+
+    String fileName = '$baseName$extension';
+    String savedPath = '${directory.path}/$fileName';
+    int counter = 1;
+    while (await File(savedPath).exists()) {
+      fileName = '${baseName}_$counter$extension';
+      savedPath = '${directory.path}/$fileName';
+      counter++;
+    }
+    
     await File(sourcePath).copy(savedPath);
     return savedPath;
+  }
+
+  static String _sanitizeFileName(String name) {
+    return name.replaceAll(RegExp(r'[<>:"/\\|?*]'), '_').trim();
+  }
+
+  // Renames a physical file on disk to a new name, avoiding collisions
+  static Future<String> renamePhysicalFile(String oldPath, String newName) async {
+    final file = File(oldPath);
+    if (!await file.exists()) return oldPath;
+
+    final directory = p.dirname(oldPath);
+    final extension = p.extension(oldPath);
+    final baseName = _sanitizeFileName(p.basenameWithoutExtension(newName));
+    
+    if (baseName.isEmpty) {
+      return oldPath;
+    }
+
+    String fileName = '$baseName$extension';
+    String newPath = '$directory/$fileName';
+    int counter = 1;
+    while (await File(newPath).exists() && newPath != oldPath) {
+      fileName = '${baseName}_$counter$extension';
+      newPath = '$directory/$fileName';
+      counter++;
+    }
+
+    if (newPath != oldPath) {
+      await file.rename(newPath);
+    }
+    return newPath;
   }
 
   // Logic for physical deletion to avoid storage leaks
