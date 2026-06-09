@@ -37,8 +37,8 @@ class TargetPicker {
                       ),
                       title: Text(profile.name, style: const TextStyle(color: Colors.white)),
                       onTap: () {
-                        onSelect(profile);
                         Navigator.pop(context);
+                        onSelect(profile);
                       },
                     );
                   },
@@ -82,8 +82,9 @@ class TargetPicker {
           ElevatedButton(
             onPressed: () {
               if (controller.text.isNotEmpty) {
-                onConfirm(controller.text.toUpperCase());
+                final enteredName = controller.text.toUpperCase();
                 Navigator.pop(context);
+                onConfirm(enteredName);
               }
             },
             child: const Text("ADD & SAVE"),
