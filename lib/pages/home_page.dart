@@ -639,7 +639,11 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Center(
         child: Container(
           height: 45,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
+          // Limit max width so it stays clean on larger screens
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.of(context).size.width * 0.85,
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 8),
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(25),
@@ -647,6 +651,7 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // Left Chevron
               IconButton(
                 icon: const Icon(Icons.chevron_left, color: Colors.white),
                 onPressed:
@@ -655,36 +660,49 @@ class _HomeScreenState extends State<HomeScreen> {
                       curve: Curves.easeInOut,
                     ),
               ),
-              ...List.generate(profiles.length, (index) {
-                final imagePath = profiles[index].imagePath;
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 6.0),
-                  child:
-                      index == currentPage
-                          ? CircleAvatar(
-                            radius: 14,
-                            backgroundImage:
-                                imagePath.startsWith('assets/')
-                                    ? AssetImage(imagePath)
-                                    : FileImage(File(imagePath))
-                                        as ImageProvider,
-                            onBackgroundImageError: (_, __) {},
-                            child: const Icon(
-                              Icons.person,
-                              size: 14,
-                              color: Colors.white,
-                            ),
-                          )
-                          : Container(
-                            width: 8,
-                            height: 8,
-                            decoration: const BoxDecoration(
-                              color: Colors.white54,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                );
-              }),
+
+              // Scrollable Indicators Section
+              Flexible(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: List.generate(profiles.length, (index) {
+                      final imagePath = profiles[index].imagePath;
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 6.0),
+                        child:
+                            index == currentPage
+                                ? CircleAvatar(
+                                  radius: 14,
+                                  backgroundImage:
+                                      imagePath.startsWith('assets/')
+                                          ? AssetImage(imagePath)
+                                          : FileImage(File(imagePath))
+                                              as ImageProvider,
+                                  onBackgroundImageError: (_, __) {},
+                                  child: const Icon(
+                                    Icons.person,
+                                    size: 14,
+                                    color: Colors.white,
+                                  ),
+                                )
+                                : Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: const BoxDecoration(
+                                    color: Colors.white54,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                      );
+                    }),
+                  ),
+                ),
+              ),
+
+              // Right Chevron
               IconButton(
                 icon: const Icon(Icons.chevron_right, color: Colors.white),
                 onPressed:
