@@ -8,8 +8,13 @@ import 'package:audioplayers/audioplayers.dart';
 class AudioService {
   static final AudioPlayer _audioPlayer = AudioPlayer();
   static AudioPlayer get player => _audioPlayer;
+
   static Stream<PlayerState> get playerStateStream =>
       _audioPlayer.onPlayerStateChanged;
+
+  static Stream<Duration> get positionStream => _audioPlayer.onPositionChanged;
+  static Stream<Duration> get durationStream => _audioPlayer.onDurationChanged;
+
   static String? currentPlayingPath;
 
   static Future<void> playLocalFile(String filePath) async {
@@ -32,12 +37,19 @@ class AudioService {
     }
   }
 
+  static Future<void> seek(Duration position) async {
+    try {
+      await _audioPlayer.seek(position);
+    } catch (e) {
+      debugPrint("Error seeking audio: $e");
+    }
+  }
+
   static Future<void> stopAudio() async {
     await _audioPlayer.stop();
     currentPlayingPath = null;
   }
 
-  // Logic for picking a local file from storage
   static Future<String?> pickAudio() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.audio,
@@ -45,14 +57,17 @@ class AudioService {
     return result?.files.single.path;
   }
 
-  // Logic for moving file from temporary cache to permanent app storage
-  static Future<String> saveToPermanentStorage(String sourcePath, {String? targetName}) async {
+  static Future<String> saveToPermanentStorage(
+    String sourcePath, {
+    String? targetName,
+  }) async {
     final directory = await getApplicationDocumentsDirectory();
     final extension = p.extension(sourcePath);
-    String baseName = targetName != null 
-        ? _sanitizeFileName(p.basenameWithoutExtension(targetName))
-        : p.basenameWithoutExtension(sourcePath);
-    
+    String baseName =
+        targetName != null
+            ? _sanitizeFileName(p.basenameWithoutExtension(targetName))
+            : p.basenameWithoutExtension(sourcePath);
+
     if (baseName.isEmpty) {
       baseName = "file";
     }
@@ -65,7 +80,7 @@ class AudioService {
       savedPath = '${directory.path}/$fileName';
       counter++;
     }
-    
+
     await File(sourcePath).copy(savedPath);
     return savedPath;
   }
@@ -74,15 +89,17 @@ class AudioService {
     return name.replaceAll(RegExp(r'[<>:"/\\|?*]'), '_').trim();
   }
 
-  // Renames a physical file on disk to a new name, avoiding collisions
-  static Future<String> renamePhysicalFile(String oldPath, String newName) async {
+  static Future<String> renamePhysicalFile(
+    String oldPath,
+    String newName,
+  ) async {
     final file = File(oldPath);
     if (!await file.exists()) return oldPath;
 
     final directory = p.dirname(oldPath);
     final extension = p.extension(oldPath);
     final baseName = _sanitizeFileName(p.basenameWithoutExtension(newName));
-    
+
     if (baseName.isEmpty) {
       return oldPath;
     }
@@ -102,7 +119,6 @@ class AudioService {
     return newPath;
   }
 
-  // Logic for physical deletion to avoid storage leaks
   static Future<void> deletePhysicalFile(String filePath) async {
     final file = File(filePath);
     if (await file.exists()) {

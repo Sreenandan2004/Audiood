@@ -5,9 +5,9 @@ import 'package:share_handler/share_handler.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:path/path.dart' as p;
+
 // Internal imports
 import 'package:audiood/pages/menu_page.dart';
-import 'package:audiood/pages/settings_page.dart';
 import 'package:audiood/services/audio_service.dart';
 import 'package:audiood/services/persistence_service.dart';
 import 'package:audiood/services/profile_service.dart';
@@ -46,7 +46,7 @@ class _HomeScreenState extends State<HomeScreen> {
   // --- LOGIC: EXTERNAL SHARE & LOCAL PICKER ---
 
   Future<void> initShareHandler() async {
-    // Wait for the native channel to stabilize
+    // Wait for native channels to stabilize
     await Future.delayed(const Duration(milliseconds: 500));
     final handler = ShareHandler.instance;
 
@@ -147,47 +147,55 @@ class _HomeScreenState extends State<HomeScreen> {
     final TextEditingController controller = TextEditingController();
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.grey[900],
-        title: const Text("Create New Person", style: TextStyle(color: Colors.white)),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          style: const TextStyle(color: Colors.white),
-          decoration: const InputDecoration(
-            hintText: "Enter name",
-            hintStyle: TextStyle(color: Colors.white54),
-            enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.yellow)),
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("CANCEL")),
-          ElevatedButton(
-            onPressed: () async {
-              if (controller.text.isNotEmpty) {
-                await ProfileService.createNewPerson(
-                  name: controller.text,
-                  profiles: profiles,
-                );
-                setState(() {});
-                if (context.mounted) Navigator.pop(context);
-
-                // Slide the page controller to the newly created user card
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (_pageController.hasClients) {
-                    _pageController.animateToPage(
-                      profiles.length - 1,
-                      duration: const Duration(milliseconds: 400),
-                      curve: Curves.easeInOut,
+      builder:
+          (context) => AlertDialog(
+            backgroundColor: Colors.grey[900],
+            title: const Text(
+              "Create New Person",
+              style: TextStyle(color: Colors.white),
+            ),
+            content: TextField(
+              controller: controller,
+              autofocus: true,
+              style: const TextStyle(color: Colors.white),
+              decoration: const InputDecoration(
+                hintText: "Enter name",
+                hintStyle: TextStyle(color: Colors.white54),
+                enabledBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: Colors.yellow),
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text("CANCEL"),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  if (controller.text.isNotEmpty) {
+                    await ProfileService.createNewPerson(
+                      name: controller.text,
+                      profiles: profiles,
                     );
+                    setState(() {});
+                    if (context.mounted) Navigator.pop(context);
+
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (_pageController.hasClients) {
+                        _pageController.animateToPage(
+                          profiles.length - 1,
+                          duration: const Duration(milliseconds: 400),
+                          curve: Curves.easeInOut,
+                        );
+                      }
+                    });
                   }
-                });
-              }
-            },
-            child: const Text("CREATE"),
+                },
+                child: const Text("CREATE"),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 
@@ -216,33 +224,39 @@ class _HomeScreenState extends State<HomeScreen> {
     final String? chosenName = await showDialog<String>(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.grey[900],
-        title: const Text("Name your Audio File", style: TextStyle(color: Colors.white)),
-        content: TextField(
-          controller: nameController,
-          autofocus: true,
-          style: const TextStyle(color: Colors.white),
-          decoration: const InputDecoration(
-            hintText: "Enter a descriptive name",
-            hintStyle: TextStyle(color: Colors.white54),
-            enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.yellow)),
+      builder:
+          (context) => AlertDialog(
+            backgroundColor: Colors.grey[900],
+            title: const Text(
+              "Name your Audio File",
+              style: TextStyle(color: Colors.white),
+            ),
+            content: TextField(
+              controller: nameController,
+              autofocus: true,
+              style: const TextStyle(color: Colors.white),
+              decoration: const InputDecoration(
+                hintText: "Enter a descriptive name",
+                hintStyle: TextStyle(color: Colors.white54),
+                enabledBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: Colors.yellow),
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, null),
+                child: const Text("CANCEL"),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  final text = nameController.text.trim();
+                  Navigator.pop(context, text.isNotEmpty ? text : defaultName);
+                },
+                child: const Text("SAVE"),
+              ),
+            ],
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, null),
-            child: const Text("CANCEL"),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              final text = nameController.text.trim();
-              Navigator.pop(context, text.isNotEmpty ? text : defaultName);
-            },
-            child: const Text("SAVE"),
-          ),
-        ],
-      ),
     );
 
     if (chosenName == null) return;
@@ -284,6 +298,12 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               TextButton(
                 onPressed: () async {
+                  // If deleting the actively playing file, stop playing first
+                  if (AudioService.currentPlayingPath ==
+                      profile.voiceNotes[index].filePath) {
+                    await AudioService.stopAudio();
+                  }
+
                   await ProfileService.deleteVoiceNote(
                     profile: profile,
                     index: index,
@@ -364,49 +384,61 @@ class _HomeScreenState extends State<HomeScreen> {
     final voiceNote = profile.voiceNotes[index];
     final extension = p.extension(voiceNote.filePath);
     String displayName = voiceNote.title;
-    if (extension.isNotEmpty && displayName.toLowerCase().endsWith(extension.toLowerCase())) {
-      displayName = displayName.substring(0, displayName.length - extension.length);
+    if (extension.isNotEmpty &&
+        displayName.toLowerCase().endsWith(extension.toLowerCase())) {
+      displayName = displayName.substring(
+        0,
+        displayName.length - extension.length,
+      );
     }
 
-    final TextEditingController controller = TextEditingController(text: displayName);
+    final TextEditingController controller = TextEditingController(
+      text: displayName,
+    );
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.grey[900],
-        title: const Text("Rename Audio File", style: TextStyle(color: Colors.white)),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          style: const TextStyle(color: Colors.white),
-          decoration: const InputDecoration(
-            hintText: "Enter new name",
-            hintStyle: TextStyle(color: Colors.white54),
-            enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.yellow)),
+      builder:
+          (context) => AlertDialog(
+            backgroundColor: Colors.grey[900],
+            title: const Text(
+              "Rename Audio File",
+              style: TextStyle(color: Colors.white),
+            ),
+            content: TextField(
+              controller: controller,
+              autofocus: true,
+              style: const TextStyle(color: Colors.white),
+              decoration: const InputDecoration(
+                hintText: "Enter new name",
+                hintStyle: TextStyle(color: Colors.white54),
+                enabledBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: Colors.yellow),
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text("CANCEL"),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  final text = controller.text.trim();
+                  if (text.isNotEmpty) {
+                    await ProfileService.renameVoiceNote(
+                      profile: profile,
+                      index: index,
+                      newName: text,
+                      profiles: profiles,
+                    );
+                    setState(() {});
+                    if (context.mounted) Navigator.pop(context);
+                  }
+                },
+                child: const Text("RENAME"),
+              ),
+            ],
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("CANCEL"),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final text = controller.text.trim();
-              if (text.isNotEmpty) {
-                await ProfileService.renameVoiceNote(
-                  profile: profile,
-                  index: index,
-                  newName: text,
-                  profiles: profiles,
-                );
-                setState(() {});
-                if (context.mounted) Navigator.pop(context);
-              }
-            },
-            child: const Text("RENAME"),
-          ),
-        ],
-      ),
     );
   }
 
@@ -421,9 +453,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (isLoading) {
       return const Scaffold(
         backgroundColor: Colors.black,
-        body: Center(
-          child: CircularProgressIndicator(color: Colors.yellow),
-        ),
+        body: Center(child: CircularProgressIndicator(color: Colors.yellow)),
       );
     }
     return Scaffold(
@@ -437,24 +467,33 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           PageView.builder(
             controller: _pageController,
-            onPageChanged: (index) => setState(() => currentPage = index),
+            onPageChanged: (index) {
+              // Automatically stop audio playing when swiping cards
+              AudioService.stopAudio();
+              setState(() => currentPage = index);
+            },
             itemCount: profiles.length,
             itemBuilder: (context, index) {
               final profile = profiles[index];
               return Stack(
                 children: [
                   Positioned.fill(
-                    child: profile.imagePath.startsWith('assets/')
-                        ? Image.asset(
-                            profile.imagePath,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, _, __) => _buildFallbackBackground(),
-                          )
-                        : Image.file(
-                            File(profile.imagePath),
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, _, __) => _buildFallbackBackground(),
-                          ),
+                    child:
+                        profile.imagePath.startsWith('assets/')
+                            ? Image.asset(
+                              profile.imagePath,
+                              fit: BoxFit.cover,
+                              errorBuilder:
+                                  (context, _, __) =>
+                                      _buildFallbackBackground(),
+                            )
+                            : Image.file(
+                              File(profile.imagePath),
+                              fit: BoxFit.cover,
+                              errorBuilder:
+                                  (context, _, __) =>
+                                      _buildFallbackBackground(),
+                            ),
                   ),
                   _buildGradientOverlay(),
                   _buildContent(profile),
@@ -471,11 +510,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildFallbackBackground() {
     return Container(
       color: Colors.black,
-      child: const Icon(
-        Icons.person,
-        size: 100,
-        color: Colors.white12,
-      ),
+      child: const Icon(Icons.person, size: 100, color: Colors.white12),
     );
   }
 
@@ -499,7 +534,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     stream: AudioService.playerStateStream,
                     builder: (context, snapshot) {
                       final state = snapshot.data;
-                      // Check if THIS specific file is the one playing
+
+                      // Identify active track playing
                       final bool isThisPlaying =
                           state == PlayerState.playing &&
                           AudioService.currentPlayingPath == vn.filePath;
@@ -508,14 +544,12 @@ class _HomeScreenState extends State<HomeScreen> {
                         title: vn.title,
                         subtitle: "${vn.mood} • ${vn.duration}",
                         isPlaying: isThisPlaying,
+                        // Stream bindings passed down for seeking & tracking
+                        positionStream: AudioService.positionStream,
+                        durationStream: AudioService.durationStream,
+                        onSeek: (position) => AudioService.seek(position),
                         onPlay: () {
                           AudioService.playLocalFile(vn.filePath);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(isThisPlaying ? "Paused" : "Playing ${vn.title}..."),
-                              duration: const Duration(seconds: 2),
-                            ),
-                          );
                         },
                         onShare: () => Share.shareXFiles([XFile(vn.filePath)]),
                         onLongPress: () => _showAudioOptions(profile, index),
@@ -552,16 +586,19 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildHeader(FriendProfile profile) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Stack(
+      alignment: Alignment.center,
       children: [
-        IconButton(
-          icon: const Icon(Icons.menu, color: Colors.white),
-          onPressed:
-              () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const MenuPage()),
-              ),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: IconButton(
+            icon: const Icon(Icons.menu, color: Colors.white),
+            onPressed:
+                () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const MenuPage()),
+                ),
+          ),
         ),
         GestureDetector(
           onTap: () => _updateProfilePhoto(profile),
@@ -589,14 +626,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
           ),
-        ),
-        IconButton(
-          icon: const Icon(Icons.settings, color: Colors.white),
-          onPressed:
-              () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const SettingsPage()),
-              ),
         ),
       ],
     );
@@ -635,11 +664,17 @@ class _HomeScreenState extends State<HomeScreen> {
                       index == currentPage
                           ? CircleAvatar(
                             radius: 14,
-                            backgroundImage: imagePath.startsWith('assets/')
-                                ? AssetImage(imagePath)
-                                : FileImage(File(imagePath)) as ImageProvider,
+                            backgroundImage:
+                                imagePath.startsWith('assets/')
+                                    ? AssetImage(imagePath)
+                                    : FileImage(File(imagePath))
+                                        as ImageProvider,
                             onBackgroundImageError: (_, __) {},
-                            child: const Icon(Icons.person, size: 14, color: Colors.white),
+                            child: const Icon(
+                              Icons.person,
+                              size: 14,
+                              color: Colors.white,
+                            ),
                           )
                           : Container(
                             width: 8,
