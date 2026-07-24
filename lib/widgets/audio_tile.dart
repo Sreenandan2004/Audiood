@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:audiood/services/audio_service.dart';
 
 class AudioTile extends StatelessWidget {
   final String title;
   final String subtitle;
   final bool isPlaying;
+  final Stream<Duration>? positionStream;
+  final Stream<Duration>? durationStream;
+  final ValueChanged<Duration>? onSeek;
   final VoidCallback onPlay;
   final VoidCallback onShare;
   final VoidCallback onLongPress;
@@ -14,6 +16,9 @@ class AudioTile extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.isPlaying,
+    this.positionStream,
+    this.durationStream,
+    this.onSeek,
     required this.onPlay,
     required this.onShare,
     required this.onLongPress,
@@ -47,7 +52,10 @@ class AudioTile extends StatelessWidget {
                 fontWeight: FontWeight.bold,
               ),
             ),
-            subtitle: Text(subtitle, style: const TextStyle(color: Colors.white54)),
+            subtitle: Text(
+              subtitle,
+              style: const TextStyle(color: Colors.white54),
+            ),
             trailing: GestureDetector(
               onTap: onShare,
               child: _buildIcon(Icons.share),
@@ -61,18 +69,26 @@ class AudioTile extends StatelessWidget {
 
   Widget _buildProgressBar(BuildContext context) {
     return StreamBuilder<Duration>(
-      stream: AudioService.player.onPositionChanged,
+      stream: positionStream,
       builder: (context, positionSnapshot) {
         final position = positionSnapshot.data ?? Duration.zero;
         return StreamBuilder<Duration>(
-          stream: AudioService.player.onDurationChanged,
+          stream: durationStream,
           builder: (context, durationSnapshot) {
             final duration = durationSnapshot.data ?? Duration.zero;
-            final double progress = duration.inMilliseconds > 0
-                ? (position.inMilliseconds / duration.inMilliseconds).clamp(0.0, 1.0)
-                : 0.0;
+            final double progress =
+                duration.inMilliseconds > 0
+                    ? (position.inMilliseconds / duration.inMilliseconds).clamp(
+                      0.0,
+                      1.0,
+                    )
+                    : 0.0;
             return Padding(
-              padding: const EdgeInsets.only(left: 16.0, right: 16.0, bottom: 8.0),
+              padding: const EdgeInsets.only(
+                left: 16.0,
+                right: 16.0,
+                bottom: 8.0,
+              ),
               child: Row(
                 children: [
                   Text(
@@ -83,8 +99,12 @@ class AudioTile extends StatelessWidget {
                     child: SliderTheme(
                       data: SliderTheme.of(context).copyWith(
                         trackHeight: 2,
-                        thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-                        overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
+                        thumbShape: const RoundSliderThumbShape(
+                          enabledThumbRadius: 6,
+                        ),
+                        overlayShape: const RoundSliderOverlayShape(
+                          overlayRadius: 14,
+                        ),
                         activeTrackColor: Colors.yellow[300],
                         inactiveTrackColor: Colors.white24,
                         thumbColor: Colors.yellow[300],
@@ -92,10 +112,13 @@ class AudioTile extends StatelessWidget {
                       child: Slider(
                         value: progress,
                         onChanged: (val) {
-                          final newPosition = Duration(
-                            milliseconds: (val * duration.inMilliseconds).toInt(),
-                          );
-                          AudioService.player.seek(newPosition);
+                          if (onSeek != null && duration.inMilliseconds > 0) {
+                            final newPosition = Duration(
+                              milliseconds:
+                                  (val * duration.inMilliseconds).toInt(),
+                            );
+                            onSeek!(newPosition);
+                          }
                         },
                       ),
                     ),

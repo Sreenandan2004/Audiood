@@ -5,6 +5,7 @@ import 'package:share_handler/share_handler.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:path/path.dart' as p;
+
 // Internal imports
 import 'package:audiood/pages/menu_page.dart';
 import 'package:audiood/services/audio_service.dart';
@@ -45,7 +46,7 @@ class _HomeScreenState extends State<HomeScreen> {
   // --- LOGIC: EXTERNAL SHARE & LOCAL PICKER ---
 
   Future<void> initShareHandler() async {
-    // Wait for the native channel to stabilize
+    // Wait for native channels to stabilize
     await Future.delayed(const Duration(milliseconds: 500));
     final handler = ShareHandler.instance;
 
@@ -180,7 +181,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     setState(() {});
                     if (context.mounted) Navigator.pop(context);
 
-                    // Slide the page controller to the newly created user card
                     WidgetsBinding.instance.addPostFrameCallback((_) {
                       if (_pageController.hasClients) {
                         _pageController.animateToPage(
@@ -298,6 +298,12 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               TextButton(
                 onPressed: () async {
+                  // If deleting the actively playing file, stop playing first
+                  if (AudioService.currentPlayingPath ==
+                      profile.voiceNotes[index].filePath) {
+                    await AudioService.stopAudio();
+                  }
+
                   await ProfileService.deleteVoiceNote(
                     profile: profile,
                     index: index,
@@ -461,7 +467,11 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           PageView.builder(
             controller: _pageController,
-            onPageChanged: (index) => setState(() => currentPage = index),
+            onPageChanged: (index) {
+              // Automatically stop audio playing when swiping cards
+              AudioService.stopAudio();
+              setState(() => currentPage = index);
+            },
             itemCount: profiles.length,
             itemBuilder: (context, index) {
               final profile = profiles[index];
@@ -524,7 +534,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     stream: AudioService.playerStateStream,
                     builder: (context, snapshot) {
                       final state = snapshot.data;
-                      // Check if THIS specific file is the one playing
+
+                      // Identify active track playing
                       final bool isThisPlaying =
                           state == PlayerState.playing &&
                           AudioService.currentPlayingPath == vn.filePath;
@@ -533,18 +544,12 @@ class _HomeScreenState extends State<HomeScreen> {
                         title: vn.title,
                         subtitle: "${vn.mood} • ${vn.duration}",
                         isPlaying: isThisPlaying,
+                        // Stream bindings passed down for seeking & tracking
+                        positionStream: AudioService.positionStream,
+                        durationStream: AudioService.durationStream,
+                        onSeek: (position) => AudioService.seek(position),
                         onPlay: () {
                           AudioService.playLocalFile(vn.filePath);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                isThisPlaying
-                                    ? "Paused"
-                                    : "Playing ${vn.title}...",
-                              ),
-                              duration: const Duration(seconds: 2),
-                            ),
-                          );
                         },
                         onShare: () => Share.shareXFiles([XFile(vn.filePath)]),
                         onLongPress: () => _showAudioOptions(profile, index),
@@ -584,7 +589,6 @@ class _HomeScreenState extends State<HomeScreen> {
     return Stack(
       alignment: Alignment.center,
       children: [
-        // Left-aligned menu icon
         Align(
           alignment: Alignment.centerLeft,
           child: IconButton(
@@ -596,8 +600,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
           ),
         ),
-
-        // Centered profile badge
         GestureDetector(
           onTap: () => _updateProfilePhoto(profile),
           child: Container(
