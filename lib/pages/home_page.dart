@@ -7,7 +7,6 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:path/path.dart' as p;
 // Internal imports
 import 'package:audiood/pages/menu_page.dart';
-import 'package:audiood/pages/settings_page.dart';
 import 'package:audiood/services/audio_service.dart';
 import 'package:audiood/services/persistence_service.dart';
 import 'package:audiood/services/profile_service.dart';
@@ -147,47 +146,56 @@ class _HomeScreenState extends State<HomeScreen> {
     final TextEditingController controller = TextEditingController();
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.grey[900],
-        title: const Text("Create New Person", style: TextStyle(color: Colors.white)),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          style: const TextStyle(color: Colors.white),
-          decoration: const InputDecoration(
-            hintText: "Enter name",
-            hintStyle: TextStyle(color: Colors.white54),
-            enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.yellow)),
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("CANCEL")),
-          ElevatedButton(
-            onPressed: () async {
-              if (controller.text.isNotEmpty) {
-                await ProfileService.createNewPerson(
-                  name: controller.text,
-                  profiles: profiles,
-                );
-                setState(() {});
-                if (context.mounted) Navigator.pop(context);
-
-                // Slide the page controller to the newly created user card
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (_pageController.hasClients) {
-                    _pageController.animateToPage(
-                      profiles.length - 1,
-                      duration: const Duration(milliseconds: 400),
-                      curve: Curves.easeInOut,
+      builder:
+          (context) => AlertDialog(
+            backgroundColor: Colors.grey[900],
+            title: const Text(
+              "Create New Person",
+              style: TextStyle(color: Colors.white),
+            ),
+            content: TextField(
+              controller: controller,
+              autofocus: true,
+              style: const TextStyle(color: Colors.white),
+              decoration: const InputDecoration(
+                hintText: "Enter name",
+                hintStyle: TextStyle(color: Colors.white54),
+                enabledBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: Colors.yellow),
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text("CANCEL"),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  if (controller.text.isNotEmpty) {
+                    await ProfileService.createNewPerson(
+                      name: controller.text,
+                      profiles: profiles,
                     );
+                    setState(() {});
+                    if (context.mounted) Navigator.pop(context);
+
+                    // Slide the page controller to the newly created user card
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (_pageController.hasClients) {
+                        _pageController.animateToPage(
+                          profiles.length - 1,
+                          duration: const Duration(milliseconds: 400),
+                          curve: Curves.easeInOut,
+                        );
+                      }
+                    });
                   }
-                });
-              }
-            },
-            child: const Text("CREATE"),
+                },
+                child: const Text("CREATE"),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 
@@ -216,33 +224,39 @@ class _HomeScreenState extends State<HomeScreen> {
     final String? chosenName = await showDialog<String>(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.grey[900],
-        title: const Text("Name your Audio File", style: TextStyle(color: Colors.white)),
-        content: TextField(
-          controller: nameController,
-          autofocus: true,
-          style: const TextStyle(color: Colors.white),
-          decoration: const InputDecoration(
-            hintText: "Enter a descriptive name",
-            hintStyle: TextStyle(color: Colors.white54),
-            enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.yellow)),
+      builder:
+          (context) => AlertDialog(
+            backgroundColor: Colors.grey[900],
+            title: const Text(
+              "Name your Audio File",
+              style: TextStyle(color: Colors.white),
+            ),
+            content: TextField(
+              controller: nameController,
+              autofocus: true,
+              style: const TextStyle(color: Colors.white),
+              decoration: const InputDecoration(
+                hintText: "Enter a descriptive name",
+                hintStyle: TextStyle(color: Colors.white54),
+                enabledBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: Colors.yellow),
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, null),
+                child: const Text("CANCEL"),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  final text = nameController.text.trim();
+                  Navigator.pop(context, text.isNotEmpty ? text : defaultName);
+                },
+                child: const Text("SAVE"),
+              ),
+            ],
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, null),
-            child: const Text("CANCEL"),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              final text = nameController.text.trim();
-              Navigator.pop(context, text.isNotEmpty ? text : defaultName);
-            },
-            child: const Text("SAVE"),
-          ),
-        ],
-      ),
     );
 
     if (chosenName == null) return;
@@ -364,49 +378,61 @@ class _HomeScreenState extends State<HomeScreen> {
     final voiceNote = profile.voiceNotes[index];
     final extension = p.extension(voiceNote.filePath);
     String displayName = voiceNote.title;
-    if (extension.isNotEmpty && displayName.toLowerCase().endsWith(extension.toLowerCase())) {
-      displayName = displayName.substring(0, displayName.length - extension.length);
+    if (extension.isNotEmpty &&
+        displayName.toLowerCase().endsWith(extension.toLowerCase())) {
+      displayName = displayName.substring(
+        0,
+        displayName.length - extension.length,
+      );
     }
 
-    final TextEditingController controller = TextEditingController(text: displayName);
+    final TextEditingController controller = TextEditingController(
+      text: displayName,
+    );
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.grey[900],
-        title: const Text("Rename Audio File", style: TextStyle(color: Colors.white)),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          style: const TextStyle(color: Colors.white),
-          decoration: const InputDecoration(
-            hintText: "Enter new name",
-            hintStyle: TextStyle(color: Colors.white54),
-            enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.yellow)),
+      builder:
+          (context) => AlertDialog(
+            backgroundColor: Colors.grey[900],
+            title: const Text(
+              "Rename Audio File",
+              style: TextStyle(color: Colors.white),
+            ),
+            content: TextField(
+              controller: controller,
+              autofocus: true,
+              style: const TextStyle(color: Colors.white),
+              decoration: const InputDecoration(
+                hintText: "Enter new name",
+                hintStyle: TextStyle(color: Colors.white54),
+                enabledBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: Colors.yellow),
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text("CANCEL"),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  final text = controller.text.trim();
+                  if (text.isNotEmpty) {
+                    await ProfileService.renameVoiceNote(
+                      profile: profile,
+                      index: index,
+                      newName: text,
+                      profiles: profiles,
+                    );
+                    setState(() {});
+                    if (context.mounted) Navigator.pop(context);
+                  }
+                },
+                child: const Text("RENAME"),
+              ),
+            ],
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("CANCEL"),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final text = controller.text.trim();
-              if (text.isNotEmpty) {
-                await ProfileService.renameVoiceNote(
-                  profile: profile,
-                  index: index,
-                  newName: text,
-                  profiles: profiles,
-                );
-                setState(() {});
-                if (context.mounted) Navigator.pop(context);
-              }
-            },
-            child: const Text("RENAME"),
-          ),
-        ],
-      ),
     );
   }
 
@@ -421,9 +447,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (isLoading) {
       return const Scaffold(
         backgroundColor: Colors.black,
-        body: Center(
-          child: CircularProgressIndicator(color: Colors.yellow),
-        ),
+        body: Center(child: CircularProgressIndicator(color: Colors.yellow)),
       );
     }
     return Scaffold(
@@ -444,17 +468,22 @@ class _HomeScreenState extends State<HomeScreen> {
               return Stack(
                 children: [
                   Positioned.fill(
-                    child: profile.imagePath.startsWith('assets/')
-                        ? Image.asset(
-                            profile.imagePath,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, _, __) => _buildFallbackBackground(),
-                          )
-                        : Image.file(
-                            File(profile.imagePath),
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, _, __) => _buildFallbackBackground(),
-                          ),
+                    child:
+                        profile.imagePath.startsWith('assets/')
+                            ? Image.asset(
+                              profile.imagePath,
+                              fit: BoxFit.cover,
+                              errorBuilder:
+                                  (context, _, __) =>
+                                      _buildFallbackBackground(),
+                            )
+                            : Image.file(
+                              File(profile.imagePath),
+                              fit: BoxFit.cover,
+                              errorBuilder:
+                                  (context, _, __) =>
+                                      _buildFallbackBackground(),
+                            ),
                   ),
                   _buildGradientOverlay(),
                   _buildContent(profile),
@@ -471,11 +500,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildFallbackBackground() {
     return Container(
       color: Colors.black,
-      child: const Icon(
-        Icons.person,
-        size: 100,
-        color: Colors.white12,
-      ),
+      child: const Icon(Icons.person, size: 100, color: Colors.white12),
     );
   }
 
@@ -512,7 +537,11 @@ class _HomeScreenState extends State<HomeScreen> {
                           AudioService.playLocalFile(vn.filePath);
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text(isThisPlaying ? "Paused" : "Playing ${vn.title}..."),
+                              content: Text(
+                                isThisPlaying
+                                    ? "Paused"
+                                    : "Playing ${vn.title}...",
+                              ),
                               duration: const Duration(seconds: 2),
                             ),
                           );
@@ -552,17 +581,23 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildHeader(FriendProfile profile) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Stack(
+      alignment: Alignment.center,
       children: [
-        IconButton(
-          icon: const Icon(Icons.menu, color: Colors.white),
-          onPressed:
-              () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const MenuPage()),
-              ),
+        // Left-aligned menu icon
+        Align(
+          alignment: Alignment.centerLeft,
+          child: IconButton(
+            icon: const Icon(Icons.menu, color: Colors.white),
+            onPressed:
+                () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const MenuPage()),
+                ),
+          ),
         ),
+
+        // Centered profile badge
         GestureDetector(
           onTap: () => _updateProfilePhoto(profile),
           child: Container(
@@ -589,14 +624,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
           ),
-        ),
-        IconButton(
-          icon: const Icon(Icons.settings, color: Colors.white),
-          onPressed:
-              () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const SettingsPage()),
-              ),
         ),
       ],
     );
@@ -634,11 +661,17 @@ class _HomeScreenState extends State<HomeScreen> {
                       index == currentPage
                           ? CircleAvatar(
                             radius: 14,
-                            backgroundImage: imagePath.startsWith('assets/')
-                                ? AssetImage(imagePath)
-                                : FileImage(File(imagePath)) as ImageProvider,
+                            backgroundImage:
+                                imagePath.startsWith('assets/')
+                                    ? AssetImage(imagePath)
+                                    : FileImage(File(imagePath))
+                                        as ImageProvider,
                             onBackgroundImageError: (_, __) {},
-                            child: const Icon(Icons.person, size: 14, color: Colors.white),
+                            child: const Icon(
+                              Icons.person,
+                              size: 14,
+                              color: Colors.white,
+                            ),
                           )
                           : Container(
                             width: 8,
