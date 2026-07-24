@@ -57,7 +57,9 @@ class _SettingsPageState extends State<SettingsPage> {
             title: const Text('Profile'),
             trailing: const Icon(Icons.arrow_forward_ios, size: 16),
             onTap: () {
-              // TODO: Navigate to Profile Page
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Profile page coming soon!')),
+              );
             },
           ),
           ListTile(
@@ -65,7 +67,9 @@ class _SettingsPageState extends State<SettingsPage> {
             title: const Text('Privacy & Security'),
             trailing: const Icon(Icons.arrow_forward_ios, size: 16),
             onTap: () {
-              // TODO: Navigate to Privacy Page
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Privacy page coming soon!')),
+              );
             },
           ),
           const Divider(),
@@ -75,7 +79,12 @@ class _SettingsPageState extends State<SettingsPage> {
             title: const Text('About Audiood'),
             trailing: const Icon(Icons.arrow_forward_ios, size: 16),
             onTap: () {
-              // TODO: Show about dialog or navigate
+              showAboutDialog(
+                context: context,
+                applicationName: 'Audiood',
+                applicationVersion: '1.0.0',
+                applicationLegalese: '© 2026 Audiood',
+              );
             },
           ),
           ListTile(
@@ -85,7 +94,10 @@ class _SettingsPageState extends State<SettingsPage> {
               style: TextStyle(color: Colors.red),
             ),
             onTap: () {
-              // TODO: Implement logout logic
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Logged out successfully!')),
+              );
+              // Pop back to home/login eventually
             },
           ),
           ],

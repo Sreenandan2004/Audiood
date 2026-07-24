@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:audiood/pages/help_page.dart';
+import 'package:audiood/pages/settings_page.dart';
 
 class MenuPage extends StatelessWidget {
   const MenuPage({super.key});
@@ -33,7 +34,9 @@ class MenuPage extends StatelessWidget {
             icon: Icons.library_music_outlined,
             title: 'My Library',
             onTap: () {
-              // TODO: Navigate to Library
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('My Library coming soon!')),
+              );
             },
           ),
           const SizedBox(height: 10),
@@ -42,7 +45,9 @@ class MenuPage extends StatelessWidget {
             icon: Icons.favorite_outline,
             title: 'Favorites',
             onTap: () {
-              // TODO: Navigate to Favorites
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Favorites coming soon!')),
+              );
             },
           ),
           const SizedBox(height: 10),
@@ -51,7 +56,10 @@ class MenuPage extends StatelessWidget {
             icon: Icons.settings_outlined,
             title: 'Settings',
             onTap: () {
-              // TODO: Navigate to Settings
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const SettingsPage()),
+              );
             },
           ),
           const SizedBox(height: 10),

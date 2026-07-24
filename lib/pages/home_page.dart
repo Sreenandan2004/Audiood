@@ -602,6 +602,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+
   Widget _buildBottomSlider() {
     return Positioned(
       bottom: 40,
