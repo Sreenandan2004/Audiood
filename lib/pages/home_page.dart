@@ -29,7 +29,8 @@ class _HomeScreenState extends State<HomeScreen> {
   bool isLoading = true;
 
   int get _realPageCount => profiles.length;
-  int get _pageCount => _realPageCount <= 1 ? _realPageCount : _realPageCount + 2;
+  int get _pageCount =>
+      _realPageCount <= 1 ? _realPageCount : _realPageCount + 2;
 
   int _realIndexFromPage(int page) {
     if (_realPageCount <= 1) return page.clamp(0, _realPageCount - 1);
