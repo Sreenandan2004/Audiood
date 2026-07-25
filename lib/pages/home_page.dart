@@ -24,6 +24,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   late final PageController _pageController = PageController(initialPage: 0);
+  late final ScrollController _sliderScrollController = ScrollController();
   int currentPage = 0;
   List<FriendProfile> profiles = [];
   bool isLoading = true;
@@ -538,10 +539,28 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
     );
   }
+void _scrollToActiveIndicator(int index) {
+    if (!_sliderScrollController.hasClients) return;
+
+    // Width of item (dot/avatar width + symmetric horizontal margins)
+    const double itemWidth = 32.0;
+    final double targetOffset =
+        (index * itemWidth) - (MediaQuery.of(context).size.width * 0.3);
+
+    _sliderScrollController.animateTo(
+      targetOffset.clamp(
+        0.0,
+        _sliderScrollController.position.maxScrollExtent,
+      ),
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+  }
 
   @override
   void dispose() {
     _pageController.dispose();
+    _sliderScrollController.dispose();
     super.dispose();
   }
 
@@ -590,6 +609,7 @@ class _HomeScreenState extends State<HomeScreen> {
               } else {
                 setState(() => currentPage = _realIndexFromPage(index));
               }
+              _scrollToActiveIndicator(currentPage);
             },
             itemCount: _pageCount,
             itemBuilder: (context, index) {
@@ -749,91 +769,96 @@ class _HomeScreenState extends State<HomeScreen> {
       ],
     );
   }
-
-  Widget _buildBottomSlider() {
-    return Positioned(
-      bottom: 40,
-      left: 0,
-      right: 0,
-      child: Center(
-        child: Container(
-          height: 45,
-          // Limit max width so it stays clean on larger screens
-          constraints: BoxConstraints(
-            maxWidth: MediaQuery.of(context).size.width * 0.85,
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.2),
-            borderRadius: BorderRadius.circular(25),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Left Chevron
-              IconButton(
-                icon: const Icon(Icons.chevron_left, color: Colors.white),
-                onPressed:
-                    () => _pageController.previousPage(
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeInOut,
-                    ),
+Widget _buildBottomSlider() {
+  if (profiles.isEmpty) return const SizedBox.shrink();
+  return Positioned(
+    bottom: 40,
+    left: 0,
+    right: 0,
+    child: Center(
+      child: Container(
+        height: 45,
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.65,
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.2),
+          borderRadius: BorderRadius.circular(25),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Left Chevron
+            IconButton(
+              icon: const Icon(Icons.chevron_left, color: Colors.white),
+              onPressed: () => _pageController.previousPage(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
               ),
+            ),
 
-              // Scrollable Indicators Section
-              Flexible(
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  physics: const BouncingScrollPhysics(),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: List.generate(profiles.length, (index) {
-                      final imagePath = profiles[index].imagePath;
-                      return Padding(
+            // Scrollable Indicators Section
+            Flexible(
+              child: SingleChildScrollView(
+                controller: _sliderScrollController,
+                scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: List.generate(profiles.length, (index) {
+                    final imagePath = profiles[index].imagePath;
+                    return GestureDetector( // <-- 1. ADDED GESTURE DETECTOR
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () {
+                        _pageController.animateToPage(
+                          _pageForRealIndex(index),
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeInOut,
+                        );
+                      },
+                      child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 6.0),
-                        child:
-                            index == currentPage
-                                ? CircleAvatar(
-                                  radius: 14,
-                                  backgroundImage:
-                                      imagePath.startsWith('assets/')
-                                          ? AssetImage(imagePath)
-                                          : FileImage(File(imagePath))
-                                              as ImageProvider,
-                                  onBackgroundImageError: (_, __) {},
-                                  child: const Icon(
-                                    Icons.person,
-                                    size: 14,
-                                    color: Colors.white,
-                                  ),
-                                )
-                                : Container(
-                                  width: 8,
-                                  height: 8,
-                                  decoration: const BoxDecoration(
-                                    color: Colors.white54,
-                                    shape: BoxShape.circle,
-                                  ),
+                        child: index == currentPage
+                            ? CircleAvatar(
+                                radius: 14,
+                                backgroundImage: imagePath.startsWith('assets/')
+                                    ? AssetImage(imagePath)
+                                    : FileImage(File(imagePath))
+                                        as ImageProvider,
+                                onBackgroundImageError: (_, __) {},
+                                child: const Icon(
+                                  Icons.person,
+                                  size: 14,
+                                  color: Colors.white,
                                 ),
-                      );
-                    }),
-                  ),
+                              )
+                            : Container(
+                                width: 8,
+                                height: 8,
+                                decoration: const BoxDecoration(
+                                  color: Colors.white54,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                      ),
+                    );
+                  }),
                 ),
               ),
+            ),
 
-              // Right Chevron
-              IconButton(
-                icon: const Icon(Icons.chevron_right, color: Colors.white),
-                onPressed:
-                    () => _pageController.nextPage(
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeInOut,
-                    ),
+            // Right Chevron
+            IconButton(
+              icon: const Icon(Icons.chevron_right, color: Colors.white),
+              onPressed: () => _pageController.nextPage(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
-    );
-  }
-}
+    ),
+  );
+}}
