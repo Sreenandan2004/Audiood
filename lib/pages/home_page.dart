@@ -23,10 +23,25 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final PageController _pageController = PageController();
+  late final PageController _pageController = PageController(initialPage: 0);
   int currentPage = 0;
   List<FriendProfile> profiles = [];
   bool isLoading = true;
+
+  int get _realPageCount => profiles.length;
+  int get _pageCount => _realPageCount <= 1 ? _realPageCount : _realPageCount + 2;
+
+  int _realIndexFromPage(int page) {
+    if (_realPageCount <= 1) return page.clamp(0, _realPageCount - 1);
+    if (page == 0) return _realPageCount - 1;
+    if (page == _pageCount - 1) return 0;
+    return page - 1;
+  }
+
+  int _pageForRealIndex(int realIndex) {
+    if (_realPageCount <= 1) return realIndex;
+    return realIndex + 1;
+  }
 
   @override
   void initState() {
@@ -41,6 +56,13 @@ class _HomeScreenState extends State<HomeScreen> {
       profiles = loaded;
       isLoading = false;
     });
+    if (mounted && profiles.length > 1) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _pageController.jumpToPage(1);
+        }
+      });
+    }
   }
 
   // --- LOGIC: EXTERNAL SHARE & LOCAL PICKER ---
@@ -379,7 +401,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     Navigator.pop(context);
                     if (_pageController.hasClients) {
                       _pageController.animateToPage(
-                        currentPage,
+                        _pageForRealIndex(currentPage),
                         duration: const Duration(milliseconds: 300),
                         curve: Curves.easeInOut,
                       );
@@ -544,11 +566,33 @@ class _HomeScreenState extends State<HomeScreen> {
             onPageChanged: (index) {
               // Automatically stop audio playing when swiping cards
               AudioService.stopAudio();
-              setState(() => currentPage = index);
+              if (_realPageCount <= 1) {
+                setState(() => currentPage = index);
+                return;
+              }
+
+              if (index == 0) {
+                final targetPage = _pageCount - 2;
+                setState(() => currentPage = _realIndexFromPage(index));
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted) {
+                    _pageController.jumpToPage(targetPage);
+                  }
+                });
+              } else if (index == _pageCount - 1) {
+                setState(() => currentPage = _realIndexFromPage(index));
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted) {
+                    _pageController.jumpToPage(1);
+                  }
+                });
+              } else {
+                setState(() => currentPage = _realIndexFromPage(index));
+              }
             },
-            itemCount: profiles.length,
+            itemCount: _pageCount,
             itemBuilder: (context, index) {
-              final profile = profiles[index];
+              final profile = profiles[_realIndexFromPage(index)];
               return Stack(
                 children: [
                   Positioned.fill(
