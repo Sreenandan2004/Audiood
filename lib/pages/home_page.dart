@@ -110,7 +110,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              if (currentProfile != null)
+              if (currentProfile != null) ...[
                 ListTile(
                   leading: const Icon(Icons.audio_file, color: Colors.yellow),
                   title: Text(
@@ -125,6 +125,18 @@ class _HomeScreenState extends State<HomeScreen> {
                     }
                   },
                 ),
+                ListTile(
+                  leading: const Icon(Icons.delete_outline, color: Colors.red),
+                  title: Text(
+                    "Delete ${currentProfile.name}",
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _confirmDeleteProfile(currentProfile, currentPage);
+                  },
+                ),
+              ],
               ListTile(
                 leading: const Icon(Icons.person_add, color: Colors.yellow),
                 title: const Text(
@@ -311,6 +323,68 @@ class _HomeScreenState extends State<HomeScreen> {
                   );
                   setState(() {});
                   if (context.mounted) Navigator.pop(context);
+                },
+                child: const Text(
+                  "DELETE",
+                  style: TextStyle(color: Colors.red),
+                ),
+              ),
+            ],
+          ),
+    );
+  }
+
+  void _confirmDeleteProfile(FriendProfile profile, int index) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            backgroundColor: Colors.grey[900],
+            title: const Text(
+              "Delete Profile?",
+              style: TextStyle(color: Colors.white),
+            ),
+            content: const Text(
+              "Deleting this profile will remove the profile and all its saved audio files.",
+              style: TextStyle(color: Colors.white70),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text("CANCEL"),
+              ),
+              TextButton(
+                onPressed: () async {
+                  if (AudioService.currentPlayingPath != null &&
+                      profile.voiceNotes.any(
+                        (note) =>
+                            note.filePath == AudioService.currentPlayingPath,
+                      )) {
+                    await AudioService.stopAudio();
+                  }
+
+                  await ProfileService.deleteProfile(
+                    profile: profile,
+                    profiles: profiles,
+                  );
+
+                  if (profiles.isEmpty) {
+                    currentPage = 0;
+                  } else if (currentPage >= profiles.length) {
+                    currentPage = profiles.length - 1;
+                  }
+
+                  setState(() {});
+                  if (context.mounted) {
+                    Navigator.pop(context);
+                    if (_pageController.hasClients) {
+                      _pageController.animateToPage(
+                        currentPage,
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                      );
+                    }
+                  }
                 },
                 child: const Text(
                   "DELETE",
@@ -630,7 +704,6 @@ class _HomeScreenState extends State<HomeScreen> {
       ],
     );
   }
-
 
   Widget _buildBottomSlider() {
     return Positioned(

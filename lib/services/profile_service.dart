@@ -28,7 +28,10 @@ class ProfileService {
         final duration = await tempPlayer.getDuration();
         if (duration != null) {
           final minutes = duration.inMinutes;
-          final seconds = duration.inSeconds.remainder(60).toString().padLeft(2, '0');
+          final seconds = duration.inSeconds
+              .remainder(60)
+              .toString()
+              .padLeft(2, '0');
           durationStr = "$minutes:$seconds";
         }
         await tempPlayer.dispose();
@@ -101,7 +104,36 @@ class ProfileService {
     }
   }
 
-  // 4. Create new person
+  // 4. Delete a profile and all its audio files
+  static Future<void> deleteProfile({
+    required FriendProfile profile,
+    required List<FriendProfile> profiles,
+  }) async {
+    try {
+      for (final note in profile.voiceNotes) {
+        try {
+          await AudioService.deletePhysicalFile(note.filePath);
+        } catch (innerError) {
+          debugPrint("Error deleting voice note file: $innerError");
+        }
+      }
+
+      if (!profile.imagePath.startsWith('assets/')) {
+        try {
+          await AudioService.deletePhysicalFile(profile.imagePath);
+        } catch (innerError) {
+          debugPrint("Error deleting profile image file: $innerError");
+        }
+      }
+
+      profiles.remove(profile);
+      await PersistenceService.saveProfiles(profiles);
+    } catch (e) {
+      debugPrint("Error in deleteProfile: $e");
+    }
+  }
+
+  // 5. Create new person
   static Future<FriendProfile> createNewPerson({
     required String name,
     required List<FriendProfile> profiles,
@@ -125,7 +157,7 @@ class ProfileService {
   }) async {
     try {
       final voiceNote = profile.voiceNotes[index];
-      
+
       // Stop the audio player if it's currently playing this file
       if (AudioService.currentPlayingPath == voiceNote.filePath) {
         await AudioService.stopAudio();
@@ -139,7 +171,10 @@ class ProfileService {
       final newTitle = '$baseName$extension';
 
       // Rename physical file
-      final newPath = await AudioService.renamePhysicalFile(voiceNote.filePath, baseName);
+      final newPath = await AudioService.renamePhysicalFile(
+        voiceNote.filePath,
+        baseName,
+      );
 
       // Create updated voice note
       final updatedVoiceNote = VoiceNote(
