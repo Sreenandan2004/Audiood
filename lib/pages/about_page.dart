@@ -52,10 +52,16 @@ class AboutPage extends StatelessWidget {
                                   color: Colors.white.withValues(alpha: 0.12),
                                 ),
                               ),
-                              child: const Icon(
-                                Icons.graphic_eq_rounded,
-                                size: 40,
-                                color: Colors.white,
+                              child: ClipOval(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(
+                                    12.0,
+                                  ), // Adjust padding to control image size inside the circle
+                                  child: Image.asset(
+                                    'assets/icon/app_icon.png',
+                                    fit: BoxFit.contain,
+                                  ),
+                                ),
                               ),
                             ),
                             const SizedBox(height: 16),
