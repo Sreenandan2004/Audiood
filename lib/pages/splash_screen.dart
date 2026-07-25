@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:audiood/pages/home_page.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -12,6 +13,10 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
+    _navigateToHome();
+  }
+
+  void _navigateToHome() {
     Future.delayed(const Duration(seconds: 3), () {
       if (mounted) {
         Navigator.pushReplacement(
@@ -25,23 +30,23 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF1B1B1B), // standard background color from previous conversations
+      backgroundColor: const Color(0xFF1B1B1B),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Image.asset(
-              'assets/icon/app_icon.png',
+          children:  [
+            Image(
+              image: AssetImage('assets/icon/app_icon.png'),
               width: 100,
               height: 100,
             ),
             SizedBox(height: 20),
             Text(
               'Audiood',
-              style: TextStyle(
+              style: GoogleFonts.plusJakartaSans(
                 fontSize: 32,
-                fontFamily: 'Sans', // Ensure you have the Roboto font in your pubspec.yaml if you want to use it
-                // fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.bold,
+                letterSpacing: -0.5,
                 color: Colors.white,
               ),
             ),
