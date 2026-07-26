@@ -147,8 +147,10 @@ class MenuPage extends StatelessWidget {
         child: InkWell(
           borderRadius: BorderRadius.circular(20),
           onTap: () async {
-            Navigator.pop(context);
-            await AudioService.pickAudio();
+            final path = await AudioService.pickAudio();
+            if (context.mounted) {
+              Navigator.pop(context, path);
+            }
           },
           child: Padding(
             padding: const EdgeInsets.all(20.0),

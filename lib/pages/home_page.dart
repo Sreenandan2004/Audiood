@@ -732,11 +732,15 @@ void _scrollToActiveIndicator(int index) {
           alignment: Alignment.centerLeft,
           child: IconButton(
             icon: const Icon(Icons.menu, color: Colors.white),
-            onPressed:
-                () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const MenuPage()),
-                ),
+            onPressed: () async {
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const MenuPage()),
+              );
+              if (result != null && result is String && mounted) {
+                _triggerTargetSelection(result);
+              }
+            },
           ),
         ),
         GestureDetector(
