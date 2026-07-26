@@ -15,9 +15,22 @@ class AudioService {
   static Stream<Duration> get positionStream => _audioPlayer.onPositionChanged;
   static Stream<Duration> get durationStream => _audioPlayer.onDurationChanged;
 
+  static Duration currentDuration = Duration.zero;
+  static bool _listenersInitialized = false;
+
+  static void _ensureListeners() {
+    if (!_listenersInitialized) {
+      _audioPlayer.onDurationChanged.listen((d) {
+        currentDuration = d;
+      });
+      _listenersInitialized = true;
+    }
+  }
+
   static String? currentPlayingPath;
 
   static Future<void> playLocalFile(String filePath) async {
+    _ensureListeners();
     try {
       if (currentPlayingPath == filePath) {
         if (_audioPlayer.state == PlayerState.playing) {

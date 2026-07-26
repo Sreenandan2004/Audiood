@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'seek_bar.dart';
+import '../services/audio_service.dart';
 
 class AudioTile extends StatelessWidget {
   final String title;
@@ -69,20 +71,14 @@ class AudioTile extends StatelessWidget {
 
   Widget _buildProgressBar(BuildContext context) {
     return StreamBuilder<Duration>(
-      stream: positionStream,
-      builder: (context, positionSnapshot) {
-        final position = positionSnapshot.data ?? Duration.zero;
+      initialData: AudioService.currentDuration,
+      stream: durationStream,
+      builder: (context, durationSnapshot) {
+        final duration = durationSnapshot.data ?? AudioService.currentDuration;
         return StreamBuilder<Duration>(
-          stream: durationStream,
-          builder: (context, durationSnapshot) {
-            final duration = durationSnapshot.data ?? Duration.zero;
-            final double progress =
-                duration.inMilliseconds > 0
-                    ? (position.inMilliseconds / duration.inMilliseconds).clamp(
-                      0.0,
-                      1.0,
-                    )
-                    : 0.0;
+          stream: positionStream,
+          builder: (context, positionSnapshot) {
+            final position = positionSnapshot.data ?? Duration.zero;
             return Padding(
               padding: const EdgeInsets.only(
                 left: 16.0,
@@ -96,27 +92,13 @@ class AudioTile extends StatelessWidget {
                     style: const TextStyle(color: Colors.white70, fontSize: 12),
                   ),
                   Expanded(
-                    child: SliderTheme(
-                      data: SliderTheme.of(context).copyWith(
-                        trackHeight: 2,
-                        thumbShape: const RoundSliderThumbShape(
-                          enabledThumbRadius: 6,
-                        ),
-                        overlayShape: const RoundSliderOverlayShape(
-                          overlayRadius: 14,
-                        ),
-                        activeTrackColor: Colors.yellow[300],
-                        inactiveTrackColor: Colors.white24,
-                        thumbColor: Colors.yellow[300],
-                      ),
-                      child: Slider(
-                        value: progress,
-                        onChanged: (val) {
-                          if (onSeek != null && duration.inMilliseconds > 0) {
-                            final newPosition = Duration(
-                              milliseconds:
-                                  (val * duration.inMilliseconds).toInt(),
-                            );
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                      child: SeekBar(
+                        position: position,
+                        duration: duration,
+                        onSeek: (newPosition) {
+                          if (onSeek != null) {
                             onSeek!(newPosition);
                           }
                         },
