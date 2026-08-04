@@ -3,9 +3,21 @@ import 'package:flutter/material.dart';
 import 'package:audiood/pages/help_page.dart';
 import 'package:audiood/pages/about_page.dart';
 import 'package:audiood/services/audio_service.dart';
+import 'package:audiood/pages/rearrange_screen.dart';
+import '../models/models.dart';
 
 class MenuPage extends StatelessWidget {
-  const MenuPage({super.key});
+  //const MenuPage({super.key});
+  final List<dynamic> profiles;
+  final List<dynamic> audios;
+  final VoidCallback onReordered;
+
+  const MenuPage({
+    super.key,
+    required this.profiles,
+    required this.audios,
+    required this.onReordered,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -50,10 +62,40 @@ class MenuPage extends StatelessWidget {
                         child: Column(
                           children: [
                             _buildTile(
-                              icon: Icons.grid_view_outlined,
+                              icon: Icons.home,
                               title: 'Profiles View',
-                              subtitle: 'Main swipable dashboard',
+                              subtitle: 'Go to Home Page',
                               onTap: () => Navigator.pop(context),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height:10),
+                      _buildGlassContainer(
+                        child: Column(
+                          children: [
+                            _buildTile(
+                              icon: Icons.grid_view_outlined,
+                              title: 'Rearrange',
+                              subtitle: 'Rearrange Profiles and Audios',
+                              onTap: () async {
+                                // Pop the menu first if needed, or push directly depending on your navigation structure
+                                Navigator.pop(context);
+
+                                await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => RearrangeScreen(
+                                      profiles: profiles.cast<FriendProfile>(), // Your main profiles list variable
+                                      audios: audios?.cast<VoiceNote>(),     // Your main audios list variable
+                                      onReordered: () {
+                                        // Call setState or reload page counts/controllers in your home page
+                                        // e.g., _initPageVariables();
+                                      },
+                                    ),
+                                  ),
+                                );
+                              },
                             ),
                           ],
                         ),
