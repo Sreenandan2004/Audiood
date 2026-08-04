@@ -304,11 +304,11 @@ class _HelpSupportPageState extends State<HelpSupportPage> {
             ],
           ),
           const SizedBox(height: 18),
-          _buildDeveloperNameRow("Sreenandan S"),
+          _buildDeveloperNameRow("Abhai Sankar P R"),
           const SizedBox(height: 10),
           _buildDeveloperNameRow("Sonal Santhosh"),
           const SizedBox(height: 10),
-          _buildDeveloperNameRow("Abhai Sankar P R"),
+          _buildDeveloperNameRow("Sreenandan S"),
         ],
       ),
     );
