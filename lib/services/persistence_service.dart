@@ -36,22 +36,6 @@ class PersistenceService {
   }
 
   static List<FriendProfile> _getDefaultProfiles() {
-    return [
-      FriendProfile(
-        name: "ZONAL",
-        imagePath: "assets/images/Zonal.jpg",
-        voiceNotes: [],
-      ),
-      FriendProfile(
-        name: "ABHAI",
-        imagePath: "assets/images/Abhai.jpg",
-        voiceNotes: [],
-      ),
-      FriendProfile(
-        name: "SURA",
-        imagePath: "assets/images/Sura.jpg",
-        voiceNotes: [],
-      ),
-    ];
+    return [];
   }
 }

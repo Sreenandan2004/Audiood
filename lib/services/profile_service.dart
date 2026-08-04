@@ -140,7 +140,7 @@ class ProfileService {
   }) async {
     final newProfile = FriendProfile(
       name: name.toUpperCase(),
-      imagePath: "assets/images/default.jpg",
+      imagePath: "",
       voiceNotes: [],
     );
     profiles.add(newProfile);
