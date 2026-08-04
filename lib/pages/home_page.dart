@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:share_handler/share_handler.dart';
 import 'package:share_plus/share_plus.dart';
@@ -571,6 +572,133 @@ class _HomeScreenState extends State<HomeScreen> {
         body: Center(child: CircularProgressIndicator(color: Colors.yellow)),
       );
     }
+
+    if (profiles.isEmpty) {
+      return Scaffold(
+        backgroundColor: Colors.black,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.menu, color: Colors.white),
+            onPressed: () async {
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => MenuPage(
+                    profiles: profiles,
+                    audios: const [],
+                    onReordered: () {},
+                  ),
+                ),
+              );
+              if (result != null && result is String && mounted) {
+                _triggerTargetSelection(result);
+              }
+            },
+          ),
+        ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: _showFabActionsBottomSheet,
+          backgroundColor: Colors.yellow[300],
+          child: const Icon(Icons.add, color: Colors.black),
+        ),
+        body: Stack(
+          children: [
+            // Background decorations
+            Positioned(
+              top: 100,
+              left: -50,
+              child: Container(
+                width: 200,
+                height: 200,
+                decoration: BoxDecoration(
+                  color: Colors.yellow.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+            Positioned(
+              bottom: -50,
+              right: -50,
+              child: Container(
+                width: 300,
+                height: 300,
+                decoration: BoxDecoration(
+                  color: Colors.yellow.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+            Center(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(24),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 48),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.1), // Increased opacity since no blur
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.3),
+                        blurRadius: 30,
+                        offset: const Offset(0, 10),
+                      )
+                    ],
+                  ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            color: Colors.yellow.withValues(alpha: 0.15),
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.yellow.withValues(alpha: 0.1),
+                                blurRadius: 40,
+                                spreadRadius: 10,
+                              )
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.people_alt_outlined,
+                            size: 80,
+                            color: Colors.yellow,
+                          ),
+                        ),
+                        const SizedBox(height: 32),
+                        const Text(
+                          "No Profiles Yet",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 28,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        const Text(
+                          "Start by adding a new person\nto organize your audio notes.",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 16,
+                            height: 1.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+        ),
+      );
+    }
+
     return Scaffold(
       floatingActionButton: FloatingActionButton(
         onPressed: _showFabActionsBottomSheet,
