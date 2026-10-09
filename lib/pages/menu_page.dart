@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:audiood/pages/help_page.dart';
 import 'package:audiood/pages/about_page.dart';
@@ -87,7 +86,7 @@ class MenuPage extends StatelessWidget {
                                   MaterialPageRoute(
                                     builder: (context) => RearrangeScreen(
                                       profiles: profiles.cast<FriendProfile>(), // Your main profiles list variable
-                                      audios: audios?.cast<VoiceNote>(),     // Your main audios list variable
+                                      audios: audios.cast<VoiceNote>(),     // Your main audios list variable
                                       onReordered: () {
                                         // Call setState or reload page counts/controllers in your home page
                                         // e.g., _initPageVariables();

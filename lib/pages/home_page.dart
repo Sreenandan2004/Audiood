@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:share_handler/share_handler.dart';
 import 'package:share_plus/share_plus.dart';
@@ -113,7 +112,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _showFabActionsBottomSheet() {
-    final currentProfile = profiles.isEmpty ? null : profiles[currentPage];
+    final currentProfile =
+        profiles.isEmpty ? null : profiles[currentPage.clamp(0, profiles.length - 1)];
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.grey[900],

@@ -30,8 +30,8 @@ migrate_working_dir/
 .flutter-plugins
 .flutter-plugins-dependencies
 .pub-cache/
-.pub/
 /build/
+android/build/
 
 # Symbolication related
 app.*.symbols
@@ -43,3 +43,10 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Isar native test binaries and local db files
+*.dll
+*.so
+*.dylib
+*.isar
+*.isar-lck

@@ -69,11 +69,22 @@ class ProfileService {
         final path = result.files.single.path!;
         final savedImagePath = await AudioService.saveToPermanentStorage(path);
 
+        // Delete old image file if it exists and is not an asset
+        if (profile.imagePath.isNotEmpty &&
+            !profile.imagePath.startsWith('assets/')) {
+          try {
+            await AudioService.deletePhysicalFile(profile.imagePath);
+          } catch (err) {
+            debugPrint("Error deleting old profile photo: $err");
+          }
+        }
+
         final updatedProfile = FriendProfile(
           name: profile.name,
           imagePath: savedImagePath,
+          sortOrder: profile.sortOrder,
           voiceNotes: profile.voiceNotes,
-        );
+        )..id = profile.id;
 
         final index = profiles.indexOf(profile);
         if (index != -1) {

@@ -106,36 +106,56 @@ class AudioService {
     String oldPath,
     String newName,
   ) async {
-    final file = File(oldPath);
-    if (!await file.exists()) return oldPath;
+    File file = File(oldPath);
+    if (!await file.exists()) {
+      final docDir = await getApplicationDocumentsDirectory();
+      final fallbackFile = File(p.join(docDir.path, p.basename(oldPath)));
+      if (await fallbackFile.exists()) {
+        file = fallbackFile;
+      } else {
+        return oldPath;
+      }
+    }
 
-    final directory = p.dirname(oldPath);
-    final extension = p.extension(oldPath);
+    final directory = p.dirname(file.path);
+    final extension = p.extension(file.path);
     final baseName = _sanitizeFileName(p.basenameWithoutExtension(newName));
 
     if (baseName.isEmpty) {
-      return oldPath;
+      return file.path;
     }
 
     String fileName = '$baseName$extension';
     String newPath = '$directory/$fileName';
     int counter = 1;
-    while (await File(newPath).exists() && newPath != oldPath) {
+    while (await File(newPath).exists() && newPath != file.path) {
       fileName = '${baseName}_$counter$extension';
       newPath = '$directory/$fileName';
       counter++;
     }
 
-    if (newPath != oldPath) {
+    if (newPath != file.path) {
       await file.rename(newPath);
     }
     return newPath;
   }
 
   static Future<void> deletePhysicalFile(String filePath) async {
+    if (filePath.isEmpty) return;
     final file = File(filePath);
     if (await file.exists()) {
       await file.delete();
+      return;
+    }
+    // Fallback: Check if file exists under current documents directory with basename
+    try {
+      final docDir = await getApplicationDocumentsDirectory();
+      final fallbackFile = File(p.join(docDir.path, p.basename(filePath)));
+      if (await fallbackFile.exists()) {
+        await fallbackFile.delete();
+      }
+    } catch (e) {
+      debugPrint("Error in fallback deletePhysicalFile: $e");
     }
   }
 }

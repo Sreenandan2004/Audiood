@@ -1,14 +1,19 @@
+import 'package:isar/isar.dart';
+
+part 'models.g.dart';
+
+@embedded
 class VoiceNote {
-  final String title;
-  final String mood;
-  final String duration;
-  final String filePath;
+  String title;
+  String mood;
+  String duration;
+  String filePath;
 
   VoiceNote({
-    required this.duration,
-    required this.mood,
-    required this.title,
-    required this.filePath,
+    this.title = '',
+    this.mood = '',
+    this.duration = '',
+    this.filePath = '',
   });
 
   Map<String, dynamic> toJson() => {
@@ -19,35 +24,45 @@ class VoiceNote {
       };
 
   factory VoiceNote.fromJson(Map<String, dynamic> json) => VoiceNote(
-        title: json['title'] as String,
-        mood: json['mood'] as String,
-        duration: json['duration'] as String,
-        filePath: json['filePath'] as String,
+        title: json['title'] as String? ?? '',
+        mood: json['mood'] as String? ?? '',
+        duration: json['duration'] as String? ?? '',
+        filePath: json['filePath'] as String? ?? '',
       );
 }
 
+@collection
 class FriendProfile {
-  final String name;
-  final String imagePath;
-  final List<VoiceNote> voiceNotes;
+  Id id = Isar.autoIncrement;
+
+  String name;
+  String imagePath;
+  int sortOrder;
+
+  List<VoiceNote> voiceNotes;
 
   FriendProfile({
-    required this.name,
-    required this.voiceNotes,
-    required this.imagePath,
-  });
+    this.name = '',
+    this.imagePath = '',
+    this.sortOrder = 0,
+    List<VoiceNote> voiceNotes = const [],
+  }) : voiceNotes = List<VoiceNote>.from(voiceNotes);
 
   Map<String, dynamic> toJson() => {
+        'id': id,
         'name': name,
         'imagePath': imagePath,
+        'sortOrder': sortOrder,
         'voiceNotes': voiceNotes.map((v) => v.toJson()).toList(),
       };
 
   factory FriendProfile.fromJson(Map<String, dynamic> json) => FriendProfile(
-        name: json['name'] as String,
-        imagePath: json['imagePath'] as String,
-        voiceNotes: (json['voiceNotes'] as List<dynamic>)
-            .map((v) => VoiceNote.fromJson(v as Map<String, dynamic>))
-            .toList(),
+        name: json['name'] as String? ?? '',
+        imagePath: json['imagePath'] as String? ?? '',
+        sortOrder: json['sortOrder'] as int? ?? 0,
+        voiceNotes: (json['voiceNotes'] as List<dynamic>?)
+                ?.map((v) => VoiceNote.fromJson(v as Map<String, dynamic>))
+                .toList() ??
+            [],
       );
 }

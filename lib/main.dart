@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:audiood/pages/splash_screen.dart';
+import 'package:audiood/services/persistence_service.dart';
 
-void main() {
-  runApp(MyApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await PersistenceService.init();
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -10,6 +13,9 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(home: SplashScreen(), debugShowCheckedModeBanner: false);
+    return const MaterialApp(
+      home: SplashScreen(),
+      debugShowCheckedModeBanner: false,
+    );
   }
 }
